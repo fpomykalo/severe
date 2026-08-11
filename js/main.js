@@ -226,17 +226,25 @@ function wireCursor(container) {
   container.addEventListener('pointerleave', () => roseCursor.classList.remove('on'))
 }
 
-/* ---------------------------------------------------------- rosa stretch */
+/* ----------------------------------------------------------- title scale
+   Scale the whole "sub rosa" composition uniformly — anchored at sub's left
+   edge — so rosa's right edge lands on the right content margin. Both words
+   grow proportionally; nothing is stretched. */
 
-let rosaNatural = 0
+let rosaNaturalW = 0
 
-function fitRosa() {
-  const wm = document.getElementById('wm-rosa')
-  if (!rosaNatural) return
-  const left = wm.getBoundingClientRect().left
-  const target = window.innerWidth - 80 - left
-  const scale = Math.max(0.2, target / rosaNatural)
-  document.querySelectorAll('.pos-rosa').forEach(el => { el.style.transform = `scaleX(${scale})` })
+function fitTitle() {
+  if (!rosaNaturalW) return
+  const sub = document.getElementById('wm-sub')
+  const rosa = document.getElementById('wm-rosa')
+  const subLeft = sub.offsetLeft     // layout positions, unaffected by transforms
+  const rosaLeft = rosa.offsetLeft
+  const natural = rosaLeft + rosaNaturalW - subLeft
+  const target = (window.innerWidth - 80) - subLeft
+  const s = Math.max(0.2, target / natural)
+  const dx = (subLeft - rosaLeft) * (1 - s)
+  document.querySelectorAll('.pos-sub').forEach(el => { el.style.transform = `scale(${s})` })
+  document.querySelectorAll('.pos-rosa').forEach(el => { el.style.transform = `translateX(${dx}px) scale(${s})` })
 }
 
 /* --------------------------------------------------------------- showcase */
@@ -263,7 +271,7 @@ function openShowcase() {
       eventTarget: showcaseEl,
     })
   }
-  fitRosa()
+  fitTitle()
   halftone.start()
 }
 
@@ -327,8 +335,8 @@ async function init() {
 
   // natural wordmark width, measured while the element still holds its full
   // text (the typewriters blank it right after)
-  rosaNatural = document.getElementById('wm-rosa').getBoundingClientRect().width
-  fitRosa()
+  rosaNaturalW = document.getElementById('wm-rosa').offsetWidth
+  fitTitle()
 
   stampClocks()
   typers = [...document.querySelectorAll('[data-type]')].map(el => new Typewriter(el))
@@ -345,7 +353,7 @@ async function init() {
   onScroll()
 
   window.addEventListener('scroll', onScroll, { passive: true })
-  window.addEventListener('resize', () => { sizeSpacer(); layoutColumns(); fitRosa(); onScroll() })
+  window.addEventListener('resize', () => { sizeSpacer(); layoutColumns(); fitTitle(); onScroll() })
 }
 
 init()

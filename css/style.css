@@ -100,11 +100,17 @@ body {
 
 /* shared Figma positions (Home 2 + Home 4 overlay) */
 
-.pos-sub  { left: calc(25% + 31px);    font-feature-settings: "ss04" 1, "ss01" 1; }
+/* the whole title scales uniformly (JS) so rosa ends on the right content
+   edge — both words grow together, anchored at sub's left edge */
+.pos-sub {
+  left: calc(25% + 31px);
+  font-feature-settings: "ss04" 1, "ss01" 1;
+  transform-origin: left top;
+}
 .pos-rosa {
   left: calc(58.33% + 40px);
   font-feature-settings: "ss01" 1;
-  transform-origin: left top; /* JS stretches it to the right content edge */
+  transform-origin: left top;
 }
 .pos-r    { left: calc(91.67% + 27px); }
 
