@@ -78,11 +78,28 @@ function clockString(timeZone) {
   return `${get('hour')}:${get('minute')}.${get('second')}`
 }
 
+// text node → owning typewriter; lets the clocks update WITHOUT replacing the
+// nodes the typewriters hold (textContent would detach them, which made the
+// times appear glued together before their separating spaces typed in)
+const nodeOwners = new Map()
+
+function setClockText(el, str) {
+  const tn = el.firstChild
+  if (!tn || tn.nodeType !== 3) { el.textContent = str; return }
+  const owner = nodeOwners.get(tn)
+  if (owner) {
+    owner.typer.full[owner.index] = str
+    owner.typer.applyAt(W) // re-render at the current timeline position
+  } else {
+    tn.nodeValue = str
+  }
+}
+
 function stampClocks() {
   const lon = clockString('Europe/London')
   const ny = clockString('America/New_York')
-  document.querySelectorAll('.clock-lon').forEach(el => { el.textContent = lon })
-  document.querySelectorAll('.clock-ny').forEach(el => { el.textContent = ny })
+  document.querySelectorAll('.clock-lon').forEach(el => setClockText(el, lon))
+  document.querySelectorAll('.clock-ny').forEach(el => setClockText(el, ny))
 }
 
 /* ------------------------------------------------------------- morph rig */
@@ -232,6 +249,8 @@ function wireCursor(container) {
    grow proportionally; nothing is stretched. */
 
 let rosaNaturalW = 0
+let titleNaturalH = 0   // trimmed cap height of the wordmark at natural size
+let latinNaturalH = 16  // two 8px mono lines
 
 function fitTitle() {
   if (!rosaNaturalW) return
@@ -245,6 +264,19 @@ function fitTitle() {
   const dx = (subLeft - rosaLeft) * (1 - s)
   document.querySelectorAll('.pos-sub').forEach(el => { el.style.transform = `scale(${s})` })
   document.querySelectorAll('.pos-rosa').forEach(el => { el.style.transform = `translateX(${dx}px) scale(${s})` })
+
+  // nav row: 20px under the scaled title; cities on rosa's visual left edge;
+  // headline: 40px under the latin block, aligned with sub's left
+  const navTop = Math.round(15 + titleNaturalH * s + 20)
+  const rosaVisualLeft = Math.round(subLeft + (rosaLeft - subLeft) * s)
+  document.querySelectorAll('.pos-deployed, .pos-latin, .pos-cities, .pos-links')
+    .forEach(el => { el.style.top = navTop + 'px' })
+  document.querySelectorAll('.pos-cities').forEach(el => { el.style.left = rosaVisualLeft + 'px' })
+  const headTop = navTop + latinNaturalH + 40
+  ;[['hl-1', 0], ['hl-2', 26], ['hl-3', 52]].forEach(([cls, off]) => {
+    const el = document.querySelector('.' + cls)
+    if (el) el.style.top = (headTop + off) + 'px'
+  })
 }
 
 /* --------------------------------------------------------------- showcase */
@@ -303,6 +335,11 @@ function layoutColumns() {
 /* ------------------------------------------------------------------- init */
 
 async function init() {
+  // position the morph and spacer immediately — before waiting on fonts —
+  // so a hard refresh never flashes the illustration in the corner
+  sizeSpacer()
+  applyMorph(Math.min(1, Math.max(0, window.scrollY / scrollRange())))
+
   try {
     await Promise.all([
       document.fonts.load('8px "Geist Mono"'),
@@ -333,13 +370,16 @@ async function init() {
   cols.style.height = Math.max(...pools.map(p => p.height), 0) + 'px'
   wireCursor(cols)
 
-  // natural wordmark width, measured while the element still holds its full
-  // text (the typewriters blank it right after)
+  // natural wordmark metrics, measured while the elements still hold their
+  // full text (the typewriters blank them right after)
   rosaNaturalW = document.getElementById('wm-rosa').offsetWidth
+  titleNaturalH = document.getElementById('wm-sub').offsetHeight
+  latinNaturalH = document.querySelector('#scene2 .pos-latin').offsetHeight
   fitTitle()
 
-  stampClocks()
   typers = [...document.querySelectorAll('[data-type]')].map(el => new Typewriter(el))
+  typers.forEach(typer => typer.nodes.forEach((n, index) => nodeOwners.set(n, { typer, index })))
+  stampClocks()
   TL_TOTAL = Math.max(
     ...typers.map(t => t.delay + t.dur),
     ...pools.map((_, i) => POOL_DELAY(i) + POOL_DUR),

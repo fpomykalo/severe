@@ -112,12 +112,14 @@ body {
   font-feature-settings: "ss01" 1;
   transform-origin: left top;
 }
-.pos-r    { left: calc(91.67% + 27px); }
+.pos-r    { right: 80px; } /* ® right edge on rosa's right edge */
 
-.pos-deployed { left: 80px;                top: 205px; }
-.pos-latin    { left: calc(25% + 44px);    top: 205px; }
+/* the nav row's top and the cities' left are set by JS: 20px under the scaled
+   title, cities on rosa's left edge, links right-aligned on rosa's right */
+.pos-deployed { left: 80px;             top: 205px; }
+.pos-latin    { left: calc(25% + 31px); top: 205px; }
 .pos-cities   { left: calc(58.33% + 57px); top: 205px; }
-.pos-links    { left: calc(91.67% - 15px); top: 205px; }
+.pos-links    { right: 80px; text-align: right; top: 205px; }
 
 .pos-cities p { white-space: pre; }
 
@@ -150,6 +152,9 @@ body {
   top: 0;
   width: 416px;
   height: 412px;
+  /* centered before the first JS frame runs, so a hard refresh never flashes
+     the illustration in the corner */
+  transform: translate(calc(50vw - 208px), calc(50vh - 239px));
   perspective: 1200px;
   will-change: transform, width, height;
 }
@@ -188,7 +193,7 @@ body {
 
 .headline {
   position: absolute;
-  left: calc(25% + 44px);
+  left: calc(25% + 31px); /* aligned with sub's left edge; tops set by JS */
   font-family: 'Geist', sans-serif;
   font-weight: 500;
   font-size: 24px;

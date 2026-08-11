@@ -114,15 +114,17 @@ const hexToRgb = hex => {
   return m ? [parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255] : [0, 0, 0]
 }
 
-const SWAP_TRAVEL = 180 // px of cursor travel between image swaps
+const SWAP_INTERVAL = 140 // ms between image swaps while the pointer is moving
+const MOVE_WINDOW = 120   // pointer counts as "moving" this long after a move
 
 export class HalftoneReveal {
   constructor(container, sources, opts = {}) {
     this.container = container
     this.follow = opts.follow ?? 0.1
     this.mouse = { x: 0.5, y: 0.5, sx: 0.5, sy: 0.5, active: 0, target: 0 }
-    this.travel = 0
-    this.lastClient = null
+    this.deck = []       // shuffled play order — every image shows before repeats
+    this.lastMove = 0
+    this.lastSwap = 0
     this.raf = null
     this.prev = 0
     this.reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -202,16 +204,9 @@ export class HalftoneReveal {
       this.mouse.x = (e.clientX - rect.left) / rect.width
       this.mouse.y = 1 - (e.clientY - rect.top) / rect.height
       this.mouse.target = this.reduced ? 0 : 1
-      if (this.lastClient) {
-        this.travel += Math.hypot(e.clientX - this.lastClient.x, e.clientY - this.lastClient.y)
-        if (this.travel > SWAP_TRAVEL) {
-          this.travel = 0
-          this.swapRandom()
-        }
-      }
-      this.lastClient = { x: e.clientX, y: e.clientY }
+      this.lastMove = performance.now()
     }
-    this.onLeave = () => { this.mouse.target = 0; this.lastClient = null }
+    this.onLeave = () => { this.mouse.target = 0 }
     // listen on the whole overlay (opts.eventTarget) so hovering the header
     // text, wordmark, or the X keeps driving the reveal
     const target = opts.eventTarget || container
@@ -245,10 +240,19 @@ export class HalftoneReveal {
     gl.uniform2f(this.u.uImageSize, img.naturalWidth, img.naturalHeight)
   }
 
+  // random order over ALL images: draw from a reshuffled deck so the full set
+  // cycles before anything repeats
   swapRandom() {
-    const ready = this.images.map((img, i) => i).filter(i => i !== this.current && this.images[i].complete && this.images[i].naturalWidth)
-    if (!ready.length) return
-    this.setImage(ready[Math.floor(Math.random() * ready.length)])
+    if (!this.deck.length) {
+      this.deck = this.images.map((img, i) => i)
+        .filter(i => i !== this.current && this.images[i].complete && this.images[i].naturalWidth)
+      for (let i = this.deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]]
+      }
+    }
+    if (!this.deck.length) return
+    this.setImage(this.deck.pop())
   }
 
   start() {
@@ -264,6 +268,11 @@ export class HalftoneReveal {
       m.sy += (m.y - m.sy) * a
       const ba = 1 - Math.exp(-dt / 0.18)
       m.active += (m.target - m.active) * ba
+      // while the pointer moves, keep cycling images in random order
+      if (now - this.lastMove < MOVE_WINDOW && now - this.lastSwap > SWAP_INTERVAL) {
+        this.lastSwap = now
+        this.swapRandom()
+      }
       const gl = this.gl
       gl.uniform2f(this.u.uMouse, m.sx, m.sy)
       gl.uniform1f(this.u.uActivity, m.active)
