@@ -252,32 +252,56 @@ function wireCursor(container) {
 let rosaNaturalW = 0
 let titleNaturalH = 0   // trimmed cap height of the wordmark at natural size
 let latinNaturalH = 16  // two 8px mono lines
+let rosaInkOffset = 0   // left side bearing of the "r" glyph at natural size
+
+// rosa's left offset from sub's left in the natural Figma composition (1440:
+// sub at 391, rosa at 880) — locks the title's internal proportions
+const ROSA_REL = 489
 
 function fitTitle() {
   if (!rosaNaturalW) return
-  const sub = document.getElementById('wm-sub')
-  const rosa = document.getElementById('wm-rosa')
-  const subLeft = sub.offsetLeft     // layout positions, unaffected by transforms
-  const rosaLeft = rosa.offsetLeft
-  const natural = rosaLeft + rosaNaturalW - subLeft
+
+  // sub (and everything aligned to it) anchors on the kito kitev column
+  const col1 = document.getElementById('col-1')
+  const colsEl = document.getElementById('cols')
+  const subLeft = colsEl.offsetLeft + col1.offsetLeft
+
+  const natural = ROSA_REL + rosaNaturalW
   const target = (window.innerWidth - 80) - subLeft
   const s = Math.max(0.2, target / natural)
-  const dx = (subLeft - rosaLeft) * (1 - s)
-  document.querySelectorAll('.pos-sub').forEach(el => { el.style.transform = `scale(${s})` })
-  document.querySelectorAll('.pos-rosa').forEach(el => { el.style.transform = `translateX(${dx}px) scale(${s})` })
 
-  // nav row: 20px under the scaled title; cities on rosa's visual left edge;
-  // headline: 40px under the latin block, aligned with sub's left
+  document.querySelectorAll('.pos-sub').forEach(el => {
+    el.style.left = subLeft + 'px'
+    el.style.transform = `scale(${s})`
+  })
+  document.querySelectorAll('.pos-rosa').forEach(el => {
+    el.style.left = subLeft + 'px'
+    el.style.transform = `translateX(${ROSA_REL * s}px) scale(${s})`
+  })
+
+  // nav row: 20px under the scaled title
   const navTop = Math.round(15 + titleNaturalH * s + 20)
-  const rosaVisualLeft = Math.round(subLeft + (rosaLeft - subLeft) * s)
   document.querySelectorAll('.pos-deployed, .pos-latin, .pos-cities, .pos-links')
     .forEach(el => { el.style.top = navTop + 'px' })
-  document.querySelectorAll('.pos-cities').forEach(el => { el.style.left = rosaVisualLeft + 'px' })
+
+  // latin block on sub's left; cities on the ink of the r's stem
+  document.querySelectorAll('.pos-latin').forEach(el => { el.style.left = subLeft + 'px' })
+  const citiesLeft = Math.round(subLeft + (ROSA_REL + rosaInkOffset) * s)
+  document.querySelectorAll('.pos-cities').forEach(el => { el.style.left = citiesLeft + 'px' })
+
+  // headline: 40px under the latin block, aligned with sub's left
   const headTop = navTop + latinNaturalH + 40
   ;[['hl-1', 0], ['hl-2', 26], ['hl-3', 52]].forEach(([cls, off]) => {
     const el = document.querySelector('.' + cls)
-    if (el) el.style.top = (headTop + off) + 'px'
+    if (el) {
+      el.style.top = (headTop + off) + 'px'
+      el.style.left = subLeft + 'px'
+    }
   })
+
+  // showcase X: under Manifesto+/showcase+, right-aligned with them, 40px away
+  const closeBtn = document.getElementById('close-showcase')
+  if (closeBtn) closeBtn.style.top = (navTop + latinNaturalH + 40) + 'px'
 }
 
 /* --------------------------------------------------------------- showcase */
@@ -329,7 +353,9 @@ function layoutColumns() {
     }
   })
   const cols = document.getElementById('cols')
-  cols.style.height = Math.max(...pools.map(p => p.height), 0) + 'px'
+  const h = Math.max(...pools.map(p => p.height), 0)
+  cols.style.height = h + 'px'
+  cols.style.top = Math.round(window.innerHeight - 30 - h) + 'px'
   runPools()
 }
 
@@ -368,7 +394,11 @@ async function init() {
     pools.push(pool)
   }
   const cols = document.getElementById('cols')
-  cols.style.height = Math.max(...pools.map(p => p.height), 0) + 'px'
+  {
+    const h = Math.max(...pools.map(p => p.height), 0)
+    cols.style.height = h + 'px'
+    cols.style.top = Math.round(window.innerHeight - 30 - h) + 'px'
+  }
   wireCursor(cols)
 
   // natural wordmark metrics, measured while the elements still hold their
@@ -376,6 +406,12 @@ async function init() {
   rosaNaturalW = document.getElementById('wm-rosa').offsetWidth
   titleNaturalH = document.getElementById('wm-sub').offsetHeight
   latinNaturalH = document.querySelector('#scene2 .pos-latin').offsetHeight
+  {
+    const mctx = document.createElement('canvas').getContext('2d')
+    mctx.font = '700 240px "Geist"'
+    const met = mctx.measureText('r')
+    rosaInkOffset = Math.max(0, -met.actualBoundingBoxLeft)
+  }
   fitTitle()
 
   typers = [...document.querySelectorAll('[data-type]')].map(el => new Typewriter(el))

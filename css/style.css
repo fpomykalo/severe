@@ -89,7 +89,7 @@ body {
   position: absolute;
   top: 38px;
   font-family: 'Geist', sans-serif;
-  font-weight: 700;
+  font-weight: 400;
   font-size: 20px;
   letter-spacing: -0.6px;
   line-height: normal;
@@ -133,8 +133,8 @@ body {
 
 #scene1-caption {
   position: absolute;
-  left: calc(33.33% + 32px);
-  top: calc(50% + 213px); /* 40px under the centered illustration (663px at 900) */
+  left: calc(50% - 208px);  /* left edge of the centered 416px illustration */
+  top: calc(50% + 213px);   /* 40px under it (663px at 900) */
   font-family: 'Geist Mono', monospace;
   font-size: 8px;
   letter-spacing: 0.8px;
@@ -298,7 +298,7 @@ body {
 
 #close-showcase {
   position: absolute;
-  left: calc(91.67% - 15px);
+  right: 80px; /* right-aligned with Manifesto+/showcase+; top set by JS */
   top: 241px;
   width: 55px;
   height: 55px;
