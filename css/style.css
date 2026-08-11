@@ -473,7 +473,7 @@ body.menu-open .menu-btn { visibility: hidden; }
     bottom: 30px;
   }
 
-  #sc-hint { display: block; bottom: 105px; }
+  #sc-hint { display: block; bottom: 115px; } /* 30px above the X (bottom 30 + 55 + 30) */
 
   #halftone { touch-action: none; }
 }
