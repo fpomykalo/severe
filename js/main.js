@@ -254,29 +254,27 @@ let titleNaturalH = 0   // trimmed cap height of the wordmark at natural size
 let latinNaturalH = 16  // two 8px mono lines
 let rosaInkOffset = 0   // left side bearing of the "r" glyph at natural size
 
-// rosa's left offset from sub's left in the natural Figma composition (1440:
-// sub at 391, rosa at 880) — locks the title's internal proportions
-const ROSA_REL = 489
-
 function fitTitle() {
   if (!rosaNaturalW) return
 
-  // sub (and everything aligned to it) anchors on the kito kitev column
-  const col1 = document.getElementById('col-1')
+  // rosa spans exactly the last two columns (zivan + noah, incl. their 16px
+  // gap) — that ratio sets the scale for the whole title. sub keeps its
+  // anchor on the kito kitev column.
   const colsEl = document.getElementById('cols')
+  const col1 = document.getElementById('col-1')  // kito
+  const col3 = document.getElementById('col-3')  // zivan
   const subLeft = colsEl.offsetLeft + col1.offsetLeft
-
-  const natural = ROSA_REL + rosaNaturalW
-  const target = (window.innerWidth - 80) - subLeft
-  const s = Math.max(0.2, target / natural)
+  const rosaLeft = colsEl.offsetLeft + col3.offsetLeft
+  const rosaTargetW = (window.innerWidth - 80) - rosaLeft
+  const s = Math.max(0.2, rosaTargetW / rosaNaturalW)
 
   document.querySelectorAll('.pos-sub').forEach(el => {
     el.style.left = subLeft + 'px'
     el.style.transform = `scale(${s})`
   })
   document.querySelectorAll('.pos-rosa').forEach(el => {
-    el.style.left = subLeft + 'px'
-    el.style.transform = `translateX(${ROSA_REL * s}px) scale(${s})`
+    el.style.left = rosaLeft + 'px'
+    el.style.transform = `scale(${s})`
   })
 
   // nav row: 20px under the scaled title
@@ -286,7 +284,7 @@ function fitTitle() {
 
   // latin block on sub's left; cities on the ink of the r's stem
   document.querySelectorAll('.pos-latin').forEach(el => { el.style.left = subLeft + 'px' })
-  const citiesLeft = Math.round(subLeft + (ROSA_REL + rosaInkOffset) * s)
+  const citiesLeft = Math.round(rosaLeft + rosaInkOffset * s)
   document.querySelectorAll('.pos-cities').forEach(el => { el.style.left = citiesLeft + 'px' })
 
   // headline: 40px under the latin block, aligned with sub's left
