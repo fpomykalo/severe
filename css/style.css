@@ -382,15 +382,18 @@ body {
 
 .menu-link a { color: inherit; text-decoration: none; cursor: pointer; }
 
+/* the X replaces the hamburger in place: same 15×12 box, same 2px stroke,
+   bars running corner to corner (atan(12/15) ≈ 38.66°) */
 #close-menu {
   position: absolute;
   right: 20px;
   top: 20px;
-  width: 13px;
-  height: 13px;
+  width: 15px;
+  height: 12px;
   background: none;
   border: 0;
   cursor: pointer;
+  padding: 0;
 }
 
 #close-menu::before,
@@ -399,13 +402,16 @@ body {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 1px;
-  height: 17px;
+  width: 19.2px;
+  height: 2px;
   background: #fff;
 }
 
-#close-menu::before { transform: translate(-50%, -50%) rotate(45deg); }
-#close-menu::after  { transform: translate(-50%, -50%) rotate(-45deg); }
+#close-menu::before { transform: translate(-50%, -50%) rotate(38.66deg); }
+#close-menu::after  { transform: translate(-50%, -50%) rotate(-38.66deg); }
+
+/* while the menu is open the hamburger behind it disappears */
+body.menu-open .menu-btn { visibility: hidden; }
 
 /* showcase drag hint (mobile only) */
 

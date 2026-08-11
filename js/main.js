@@ -118,11 +118,14 @@ const logoEnd = () => (window.innerWidth <= 600
 
 const scrollRange = () => Math.round(window.innerHeight * 1.4)
 
+let introLocked = false // mobile: once the morph completes, the intro is gone
+
 function sizeSpacer() {
   // mobile content is taller than the viewport — extra scroll after the morph
   // scrolls the written page itself
   const extra = Math.max(0, contentHeight - window.innerHeight)
-  spacer.style.height = window.innerHeight + scrollRange() + extra + 'px'
+  const range = introLocked ? 0 : scrollRange()
+  spacer.style.height = window.innerHeight + range + extra + 'px'
 }
 
 const easeInOut = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
@@ -234,7 +237,31 @@ let showcaseOpen = false
 
 function onScroll() {
   if (showcaseOpen) return
+
+  if (introLocked) {
+    // mobile after the intro: the page top IS the main layout; all scroll
+    // moves the content, the intro no longer exists on the scroll track
+    const extra = window.scrollY
+    applyMorph(1, extra)
+    scene2.style.transform = extra ? `translateY(${-extra}px)` : ''
+    setWriteTarget(TL_TOTAL)
+    return
+  }
+
   const p = Math.min(1, Math.max(0, window.scrollY / scrollRange()))
+
+  // mobile: completing the morph permanently retires the intro (until a
+  // fresh page load) — collapse its scroll region and re-anchor
+  if (p >= 0.999 && isMobile()) {
+    introLocked = true
+    const past = Math.max(0, window.scrollY - scrollRange())
+    sizeSpacer()
+    window.scrollTo(0, past)
+    scene1Caption.style.display = 'none'
+    onScroll()
+    return
+  }
+
   const extra = isMobile() ? Math.max(0, window.scrollY - scrollRange()) : 0
   applyMorph(p, extra)
   scene2.style.transform = extra ? `translateY(${-extra}px)` : ''
@@ -515,8 +542,8 @@ async function init() {
 
   // mobile menu
   const menu = document.getElementById('menu')
-  const openMenu = () => { menu.hidden = false }
-  const closeMenu = () => { menu.hidden = true }
+  const openMenu = () => { menu.hidden = false; document.body.classList.add('menu-open') }
+  const closeMenu = () => { menu.hidden = true; document.body.classList.remove('menu-open') }
   document.getElementById('menu-btn').addEventListener('click', openMenu)
   document.getElementById('sc-menu-btn').addEventListener('click', openMenu)
   document.getElementById('close-menu').addEventListener('click', closeMenu)
