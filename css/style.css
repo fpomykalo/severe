@@ -445,9 +445,6 @@ body.menu-open .menu-btn { visibility: hidden; }
 
   .pos-latin { white-space: normal; width: 132px; }
 
-  .pos-cities { left: auto !important; right: 19px; }
-
-  .pos-r { right: 59px; top: 68px; }
 
   .menu-btn { display: block; }
 

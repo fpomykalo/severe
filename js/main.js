@@ -240,8 +240,11 @@ function onScroll() {
 
   if (introLocked) {
     // mobile after the intro: the page top IS the main layout. The header
-    // (logo, wordmark, latin, cities) is fixed — only the headline and the
-    // columns scroll, sliding under the black header mask.
+    // (logo, wordmark, latin, cities) is fixed and collapses over the first
+    // 200px of scroll (iPhone 16-5); the headline and columns scroll under
+    // the black header mask.
+    headerCollapse = Math.min(1, window.scrollY / 200)
+    applyMobileHeader(headerCollapse, '#scene2')
     applyMorph(1)
     scrollContent(window.scrollY)
     setWriteTarget(TL_TOTAL)
@@ -306,45 +309,77 @@ const isMobile = () => window.innerWidth <= 600
 
 let mobileColsTop = 0   // set by fitTitle, consumed by layoutColumns
 let contentHeight = 0   // total document height on mobile (set by layoutColumns)
+let mobileHeader = null // expanded/collapsed header geometry (set by fitTitle)
+let headerCollapse = 0  // 0 = expanded (16-2), 1 = collapsed (16-5)
+
+// interpolate the mobile header between its expanded and collapsed states
+function applyMobileHeader(c, scope) {
+  const m = mobileHeader
+  if (!m) return
+  const L = (a, b) => a + (b - a) * c
+  const q = sel => document.querySelectorAll(scope + ' ' + sel)
+  const s = L(m.s1, m.s2)
+
+  q('.pos-sub').forEach(el => {
+    el.style.left = Math.round(L(m.sub1.left, m.sub2.left)) + 'px'
+    el.style.top = Math.round(L(m.sub1.top, m.sub2.top)) + 'px'
+    el.style.transform = `scale(${s})`
+  })
+  q('.pos-rosa').forEach(el => {
+    el.style.left = Math.round(L(m.rosa1.left, m.rosa2.left)) + 'px'
+    el.style.top = Math.round(L(m.rosa1.top, m.rosa2.top)) + 'px'
+    el.style.transform = `scale(${s})`
+  })
+  q('.pos-r').forEach(el => {
+    el.style.right = 'auto'
+    el.style.left = Math.round(L(m.r1.left, m.r2.left)) + 'px'
+    el.style.top = Math.round(L(m.r1.top, m.r2.top)) + 'px'
+  })
+  const navTop = Math.round(L(m.navTop1, m.navTop2))
+  q('.pos-latin').forEach(el => { el.style.top = navTop + 'px'; el.style.left = m.rail + 'px' })
+  q('.pos-cities').forEach(el => {
+    el.style.top = navTop + 'px'
+    el.style.left = Math.round(L(m.cities1Left, m.cities2Left)) + 'px'
+    el.style.right = 'auto'
+  })
+  if (scope === '#scene2') {
+    const mask = document.getElementById('header-mask')
+    if (mask) mask.style.height = (navTop + 26 + 20) + 'px'
+  }
+}
 
 function fitTitle() {
   if (!rosaNaturalW) return
   const closeBtn = document.getElementById('close-showcase')
 
   if (isMobile()) {
-    // iPhone frames: sub and rosa stack, both inked on the 20px rail, rosa's
-    // ink spanning the full width between the 20px margins
+    // iPhone frames: expanded (16-2) — sub and rosa stack big; collapsed
+    // (16-5) — one small "sub rosa" line beside the logo. Scrolling down
+    // interpolates between the two states.
     const rail = 20
-    const target = window.innerWidth - 40
-    const s = Math.max(0.2, target / rosaInkW)
+    const vw = window.innerWidth
+    const s1 = Math.max(0.2, (vw - 40) / rosaInkW)
+    const s2 = s1 * (62 / 129)  // collapsed cap height ratio from the frames
 
-    const subCapTop = 38
-    const rosaCapTop = Math.round(subCapTop + 153 * s)
-    const subBoxLeft = Math.round(rail - subInkOffset * s)
+    const navTop1 = Math.round(38 + 153 * s1 + titleNaturalH * s1 + 20)
+    const navTop2 = Math.round(54 + titleNaturalH * s2 + 20)
 
-    document.querySelectorAll('.pos-sub').forEach(el => {
-      el.style.left = subBoxLeft + 'px'
-      el.style.top = subCapTop + 'px'
-      el.style.transform = `scale(${s})`
-    })
+    mobileHeader = {
+      rail, vw, s1, s2, navTop1, navTop2,
+      sub1: { left: rail - subInkOffset * s1, top: 38 },
+      sub2: { left: rail - subInkOffset * s2, top: 54 },
+      rosa1: { left: rail - rosaInkOffset * s1, top: Math.round(38 + 153 * s1) },
+      rosa2: { left: rail - subInkOffset * s2 + 458 * s2, top: 54 },
+      r1: { left: rail - subInkOffset * s1 + (subNaturalW - 8) * s1, top: 38 + 40 * s1 },
+      r2: { left: vw - 33, top: 55 },
+      cities1Left: vw - 170,
+      cities2Left: rail - subInkOffset * s2 + (458 + rosaInkOffset) * s2,
+    }
 
-    // ® tucks against the b (Figma: 6px inside sub's box edge, 30px down)
-    document.querySelectorAll('.pos-r').forEach(el => {
-      el.style.right = 'auto'
-      el.style.left = Math.round(subBoxLeft + (subNaturalW - 8) * s) + 'px'
-      el.style.top = Math.round(subCapTop + 40 * s) + 'px'
-    })
-    document.querySelectorAll('.pos-rosa').forEach(el => {
-      el.style.left = Math.round(rail - rosaInkOffset * s) + 'px'
-      el.style.top = rosaCapTop + 'px'
-      el.style.transform = `scale(${s})`
-    })
+    applyMobileHeader(headerCollapse, '#scene2')
+    applyMobileHeader(0, '#showcase') // the showcase header is always expanded
 
-    const navTop = Math.round(rosaCapTop + titleNaturalH * s + 20)
-    document.querySelectorAll('.pos-latin, .pos-cities').forEach(el => { el.style.top = navTop + 'px' })
-    document.querySelectorAll('.pos-latin').forEach(el => { el.style.left = rail + 'px' })
-
-    const headTop = navTop + 26 + 40  // latin block is 3 lines on mobile
+    const headTop = navTop1 + 26 + 40  // latin block is 3 lines on mobile
     ;[['hl-1', 0], ['hl-2', 26], ['hl-3', 52]].forEach(([cls, off]) => {
       const el = document.querySelector('.' + cls)
       if (el) {
@@ -354,11 +389,7 @@ function fitTitle() {
     })
 
     mobileColsTop = headTop + 169
-    if (closeBtn) closeBtn.style.top = (navTop + 36) + 'px'
-    // black mask behind the fixed header — content scrolls under its edge,
-    // 20px below the latin/cities block
-    const mask = document.getElementById('header-mask')
-    if (mask) mask.style.height = (navTop + 26 + 20) + 'px'
+    if (closeBtn) closeBtn.style.top = (navTop1 + 36) + 'px'
     return
   }
 
