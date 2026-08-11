@@ -346,6 +346,10 @@ function applyMobileHeader(c, scope) {
     const mask = document.getElementById('header-mask')
     if (mask) mask.style.height = (navTop + 26 + 20) + 'px'
   }
+  if (scope === '#showcase') {
+    const closeBtn = document.getElementById('close-showcase')
+    if (closeBtn) closeBtn.style.top = (navTop + 36) + 'px'
+  }
 }
 
 function fitTitle() {
@@ -372,12 +376,13 @@ function fitTitle() {
       rosa2: { left: rail - subInkOffset * s2 + 458 * s2, top: 54 },
       r1: { left: rail - subInkOffset * s1 + (subNaturalW - 8) * s1, top: 38 + 40 * s1 },
       r2: { left: vw - 33, top: 55 },
-      cities1Left: vw - 170,
+      cities1Left: vw - 171, // cities block right edge (…Detroit) at vw-20
       cities2Left: rail - subInkOffset * s2 + (458 + rosaInkOffset) * s2,
     }
 
     applyMobileHeader(headerCollapse, '#scene2')
-    applyMobileHeader(0, '#showcase') // the showcase header is always expanded
+    // the showcase overlay mirrors the page header's current state
+    applyMobileHeader(headerCollapse, '#showcase')
 
     const headTop = navTop1 + 26 + 40  // latin block is 3 lines on mobile
     ;[['hl-1', 0], ['hl-2', 26], ['hl-3', 52]].forEach(([cls, off]) => {
@@ -389,7 +394,6 @@ function fitTitle() {
     })
 
     mobileColsTop = headTop + 169
-    if (closeBtn) closeBtn.style.top = (navTop1 + 36) + 'px'
     return
   }
 
@@ -573,16 +577,11 @@ async function init() {
   subNaturalW = document.getElementById('wm-sub').offsetWidth
   titleNaturalH = document.getElementById('wm-sub').offsetHeight
   latinNaturalH = document.querySelector('#scene2 .pos-latin').offsetHeight
-  {
-    const mctx = document.createElement('canvas').getContext('2d')
-    mctx.font = '700 240px "Geist"'
-    if ('letterSpacing' in mctx) mctx.letterSpacing = '-7.2px'
-    rosaInkOffset = Math.max(0, -mctx.measureText('r').actualBoundingBoxLeft)
-    subInkOffset = Math.max(0, -mctx.measureText('s').actualBoundingBoxLeft)
-    const met = mctx.measureText('rosa')
-    rosaInkW = met.actualBoundingBoxRight - Math.max(0, -met.actualBoundingBoxLeft)
-    if (!(rosaInkW > 0)) rosaInkW = rosaNaturalW
-  }
+  // ink metrics of the wordmark at 240px, pixel-measured with the real
+  // ss01/ss04 alternate glyphs (canvas measureText can't apply font features)
+  rosaInkOffset = 16
+  subInkOffset = 9
+  rosaInkW = 464
   fitTitle()
 
   typers = [...document.querySelectorAll('[data-type]')].map(el => new Typewriter(el))
