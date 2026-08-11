@@ -215,13 +215,28 @@ function onScroll() {
 
 const roseCursor = document.getElementById('rose-cursor')
 
-function wireCursor(canvas) {
-  canvas.addEventListener('pointermove', e => {
+// the cursor lives on the columns wrapper, so it survives the gutters between
+// columns but ends at the container's outer margins
+function wireCursor(container) {
+  container.addEventListener('pointermove', e => {
     roseCursor.style.transform = `translate(${e.clientX - 16.5}px, ${e.clientY - 12.5}px)`
     roseCursor.classList.add('on')
     runPools()
   })
-  canvas.addEventListener('pointerleave', () => roseCursor.classList.remove('on'))
+  container.addEventListener('pointerleave', () => roseCursor.classList.remove('on'))
+}
+
+/* ---------------------------------------------------------- rosa stretch */
+
+let rosaNatural = 0
+
+function fitRosa() {
+  const wm = document.getElementById('wm-rosa')
+  if (!rosaNatural) return
+  const left = wm.getBoundingClientRect().left
+  const target = window.innerWidth - 80 - left
+  const scale = Math.max(0.2, target / rosaNatural)
+  document.querySelectorAll('.pos-rosa').forEach(el => { el.style.transform = `scaleX(${scale})` })
 }
 
 /* --------------------------------------------------------------- showcase */
@@ -245,8 +260,10 @@ function openShowcase() {
       follow: 0.1,
       inkColor: '#1A1A1A',
       paperColor: '#000000',
+      eventTarget: showcaseEl,
     })
   }
+  fitRosa()
   halftone.start()
 }
 
@@ -270,6 +287,8 @@ function layoutColumns() {
       holder.style.height = pool.height + 'px'
     }
   })
+  const cols = document.getElementById('cols')
+  cols.style.height = Math.max(...pools.map(p => p.height), 0) + 'px'
   runPools()
 }
 
@@ -301,8 +320,15 @@ async function init() {
     })
     holder.style.height = pool.height + 'px'
     pools.push(pool)
-    wireCursor(canvas)
   }
+  const cols = document.getElementById('cols')
+  cols.style.height = Math.max(...pools.map(p => p.height), 0) + 'px'
+  wireCursor(cols)
+
+  // natural wordmark width, measured while the element still holds its full
+  // text (the typewriters blank it right after)
+  rosaNatural = document.getElementById('wm-rosa').getBoundingClientRect().width
+  fitRosa()
 
   stampClocks()
   typers = [...document.querySelectorAll('[data-type]')].map(el => new Typewriter(el))
@@ -319,7 +345,7 @@ async function init() {
   onScroll()
 
   window.addEventListener('scroll', onScroll, { passive: true })
-  window.addEventListener('resize', () => { sizeSpacer(); layoutColumns(); onScroll() })
+  window.addEventListener('resize', () => { sizeSpacer(); layoutColumns(); fitRosa(); onScroll() })
 }
 
 init()

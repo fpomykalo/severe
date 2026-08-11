@@ -212,9 +212,12 @@ export class HalftoneReveal {
       this.lastClient = { x: e.clientX, y: e.clientY }
     }
     this.onLeave = () => { this.mouse.target = 0; this.lastClient = null }
-    container.addEventListener('pointermove', this.onMove, { passive: true })
-    container.addEventListener('pointerenter', this.onMove, { passive: true })
-    container.addEventListener('pointerleave', this.onLeave, { passive: true })
+    // listen on the whole overlay (opts.eventTarget) so hovering the header
+    // text, wordmark, or the X keeps driving the reveal
+    const target = opts.eventTarget || container
+    target.addEventListener('pointermove', this.onMove, { passive: true })
+    target.addEventListener('pointerenter', this.onMove, { passive: true })
+    target.addEventListener('pointerleave', this.onLeave, { passive: true })
 
     this.resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)

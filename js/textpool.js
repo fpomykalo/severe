@@ -40,8 +40,10 @@ export class TextPool {
 
     // prepare() is the expensive one-time pass — keep it; relayout() only
     // reruns the pure-arithmetic line layout at a new width
+    // pre-wrap keeps the ten-space run between a name and its copy visible
+    // instead of collapsing it CSS-style
     this.prepared = paragraphs.map(p =>
-      prepareWithSegments(p.toUpperCase(), this.font, { letterSpacing: this.letterSpacing }))
+      prepareWithSegments(p.toUpperCase(), this.font, { letterSpacing: this.letterSpacing, whiteSpace: 'pre-wrap' }))
 
     this.relayout(this.width)
 
