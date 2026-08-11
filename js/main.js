@@ -297,9 +297,9 @@ function fitTitle() {
     }
   })
 
-  // showcase X: under Manifesto+/showcase+, right-aligned with them, 40px away
+  // showcase X: under Manifesto+/showcase+, right-aligned with them, 20px away
   const closeBtn = document.getElementById('close-showcase')
-  if (closeBtn) closeBtn.style.top = (navTop + latinNaturalH + 40) + 'px'
+  if (closeBtn) closeBtn.style.top = (navTop + latinNaturalH + 20) + 'px'
 }
 
 /* --------------------------------------------------------------- showcase */
