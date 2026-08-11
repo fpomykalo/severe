@@ -239,11 +239,11 @@ function onScroll() {
   if (showcaseOpen) return
 
   if (introLocked) {
-    // mobile after the intro: the page top IS the main layout; all scroll
-    // moves the content, the intro no longer exists on the scroll track
-    const extra = window.scrollY
-    applyMorph(1, extra)
-    scene2.style.transform = extra ? `translateY(${-extra}px)` : ''
+    // mobile after the intro: the page top IS the main layout. The header
+    // (logo, wordmark, latin, cities) is fixed — only the headline and the
+    // columns scroll, sliding under the black header mask.
+    applyMorph(1)
+    scrollContent(window.scrollY)
     setWriteTarget(TL_TOTAL)
     return
   }
@@ -262,10 +262,16 @@ function onScroll() {
     return
   }
 
-  const extra = isMobile() ? Math.max(0, window.scrollY - scrollRange()) : 0
-  applyMorph(p, extra)
-  scene2.style.transform = extra ? `translateY(${-extra}px)` : ''
+  applyMorph(p)
+  scrollContent(0)
   setWriteTarget(p >= 0.999 ? TL_TOTAL : 0)
+}
+
+// translate only the below-the-header content (headline + columns)
+function scrollContent(extra) {
+  const t = extra ? `0 ${-extra}px` : ''
+  document.querySelectorAll('.headline').forEach(el => { el.style.translate = t })
+  document.getElementById('cols').style.translate = t
 }
 
 /* ------------------------------------------------------------ rose cursor */
@@ -294,6 +300,7 @@ let latinNaturalH = 16  // the latin caption block height (16 desktop / 26 mobil
 let rosaInkOffset = 0   // left side bearing of the "r" glyph at natural size
 let subInkOffset = 0    // left side bearing of the "s" glyph at natural size
 let rosaInkW = 0        // ink width of "rosa" (box minus side bearings)
+let subNaturalW = 0     // natural box width of "sub"
 
 const isMobile = () => window.innerWidth <= 600
 
@@ -313,11 +320,19 @@ function fitTitle() {
 
     const subCapTop = 38
     const rosaCapTop = Math.round(subCapTop + 153 * s)
+    const subBoxLeft = Math.round(rail - subInkOffset * s)
 
     document.querySelectorAll('.pos-sub').forEach(el => {
-      el.style.left = Math.round(rail - subInkOffset * s) + 'px'
+      el.style.left = subBoxLeft + 'px'
       el.style.top = subCapTop + 'px'
       el.style.transform = `scale(${s})`
+    })
+
+    // ® tucks against the b (Figma: 6px inside sub's box edge, 30px down)
+    document.querySelectorAll('.pos-r').forEach(el => {
+      el.style.right = 'auto'
+      el.style.left = Math.round(subBoxLeft + (subNaturalW - 8) * s) + 'px'
+      el.style.top = Math.round(subCapTop + 40 * s) + 'px'
     })
     document.querySelectorAll('.pos-rosa').forEach(el => {
       el.style.left = Math.round(rail - rosaInkOffset * s) + 'px'
@@ -340,6 +355,10 @@ function fitTitle() {
 
     mobileColsTop = headTop + 169
     if (closeBtn) closeBtn.style.top = (navTop + 36) + 'px'
+    // black mask behind the fixed header — content scrolls under its edge,
+    // 20px below the latin/cities block
+    const mask = document.getElementById('header-mask')
+    if (mask) mask.style.height = (navTop + 26 + 20) + 'px'
     return
   }
 
@@ -359,6 +378,11 @@ function fitTitle() {
     el.style.left = Math.round(subLeft - subInkOffset * s) + 'px'
     el.style.top = '15px'
     el.style.transform = `scale(${s})`
+  })
+  document.querySelectorAll('.pos-r').forEach(el => {
+    el.style.left = 'auto'
+    el.style.right = '80px'
+    el.style.top = '38px'
   })
   document.querySelectorAll('.pos-rosa').forEach(el => {
     el.style.left = Math.round(rosaLeft - rosaInkOffset * s) + 'px'
@@ -515,6 +539,7 @@ async function init() {
   // natural wordmark metrics, measured while the elements still hold their
   // full text (the typewriters blank them right after)
   rosaNaturalW = document.getElementById('wm-rosa').offsetWidth
+  subNaturalW = document.getElementById('wm-sub').offsetWidth
   titleNaturalH = document.getElementById('wm-sub').offsetHeight
   latinNaturalH = document.querySelector('#scene2 .pos-latin').offsetHeight
   {
