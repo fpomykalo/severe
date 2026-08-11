@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sub rosa</title>
+<link rel="icon" href="assets/rose-logo.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/Geist-Bold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/GeistMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="scroll-spacer" aria-hidden="true"></div>
+
+<main id="stage">
+
+  <!-- Scene 1 — initial load -->
+  <div id="scene1-caption" class="mono-8">
+    <p>sub rosā (sub ROH-zah)</p>
+    <p>Latin, &quot;under the rose&quot;<br>Said of what is spoken in confidence</p>
+  </div>
+
+  <!-- Morphing rose: illustration flips 180° around the Y axis into the logo -->
+  <div id="morph" aria-hidden="true">
+    <div id="flipper">
+      <img id="face-illustration" src="assets/rose-illustration.svg" alt="" draggable="false">
+      <img id="face-logo" src="assets/rose-logo.svg" alt="" draggable="false">
+    </div>
+  </div>
+
+  <!-- Scene 2 — after the initial load -->
+  <section id="scene2" aria-label="sub rosa">
+
+    <p id="wm-sub" class="wordmark" data-type data-type-dur="360">sub</p>
+    <p id="wm-rosa" class="wordmark" data-type data-type-dur="480" data-type-delay="360">rosa</p>
+    <p id="wm-r" data-type data-type-dur="120" data-type-delay="840">®</p>
+
+    <p id="nav-deployed" class="mono-8" data-type data-type-dur="420" data-type-delay="200">Deployed — Globally</p>
+
+    <div id="nav-latin" class="mono-8" data-type data-type-dur="700" data-type-delay="300">
+      Latin, &quot;under the rose&quot;<br>Said of what is spoken in confidence
+    </div>
+
+    <div id="nav-cities" class="mono-8" data-type data-type-dur="700" data-type-delay="400">
+      <p>London / New York / Detroit</p>
+      <p><span id="clock-lon">22:04.37</span>      <span id="clock-ny">16:04.37</span></p>
+    </div>
+
+    <p id="nav-manifesto" class="mono-8" data-type data-type-dur="300" data-type-delay="500">Manifesto+</p>
+
+    <p id="headline" data-type data-type-dur="900" data-type-delay="600">The creative leads who built <br>tech’s most controversial brand. <br><span class="u">Get in touch</span> — we'll have a look.</p>
+
+    <div class="col" id="col-1" style="left:80px"></div>
+    <div class="col" id="col-2" style="left:calc(25% + 44px)"></div>
+    <div class="col" id="col-3" style="left:calc(50% + 8px)"></div>
+    <div class="col" id="col-4" style="left:calc(75% - 28px)"></div>
+
+  </section>
+
+</main>
+
+<img id="rose-cursor" src="assets/rose-logo.svg" alt="" aria-hidden="true" draggable="false">
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
