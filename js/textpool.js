@@ -34,28 +34,30 @@ export class TextPool {
     this.whiteWords = opts.whiteWords ?? 0              // first N words drawn white
     this.words = []
     this.revealed = 0
-    this.revealTarget = 0
-    this.revealStart = 0
-    this.revealDur = 0
     this.active = false
     this.pointer = { x: -1e4, y: -1e4, vx: 0, vy: 0, t: 0, inside: false }
     this.height = 0
 
-    this.layout(paragraphs)
-    this.fit()
+    // prepare() is the expensive one-time pass — keep it; relayout() only
+    // reruns the pure-arithmetic line layout at a new width
+    this.prepared = paragraphs.map(p =>
+      prepareWithSegments(p.toUpperCase(), this.font, { letterSpacing: this.letterSpacing }))
+
+    this.relayout(this.width)
 
     canvas.addEventListener('pointermove', e => this.onMove(e))
     canvas.addEventListener('pointerleave', () => { this.pointer.inside = false })
   }
 
-  layout(paragraphs) {
+  relayout(width) {
+    this.width = width
+    const frac = this.words.length ? this.revealed / this.words.length : 0
+    this.words = []
+    const spaceW = this.measure(' ')
     let y = 0
     let wordIndex = 0
-    for (const para of paragraphs) {
-      const text = para.toUpperCase()
-      const prepared = prepareWithSegments(text, this.font, { letterSpacing: this.letterSpacing })
-      const { lines } = layoutWithLines(prepared, this.width, this.lineHeight)
-      const spaceW = this.measure(' ')
+    for (const prepared of this.prepared) {
+      const { lines } = layoutWithLines(prepared, width, this.lineHeight)
       for (let i = 0; i < lines.length; i++) {
         const lineY = y + i * this.lineHeight + this.size
         let x = 0
@@ -78,6 +80,9 @@ export class TextPool {
       y += lines.length * this.lineHeight + this.lineHeight // blank line between paragraphs
     }
     this.height = y - this.lineHeight + 4
+    this.revealed = Math.round(frac * this.words.length)
+    this.fit()
+    this.active = true
   }
 
   measure(text) {
@@ -134,37 +139,18 @@ export class TextPool {
     }
   }
 
-  reveal(durationMs) {
-    this.revealTarget = this.words.length
-    this.revealStart = performance.now()
-    this.revealDur = durationMs
-    this.active = true
-  }
-
-  revealInstant() {
-    this.revealed = this.words.length
-    this.revealTarget = this.words.length
-    this.active = true
-  }
-
-  hide() {
-    this.revealed = 0
-    this.revealTarget = 0
-    for (const w of this.words) {
-      w.x = w.hx; w.y = w.hy; w.vx = 0; w.vy = 0; w.heat = 0
+  // fraction 0..1 of words shown — driven by the master write-on timeline,
+  // forward and backward alike
+  setReveal(frac) {
+    const n = Math.round(Math.max(0, Math.min(1, frac)) * this.words.length)
+    if (n !== this.revealed) {
+      this.revealed = n
+      this.active = true
     }
-    this.draw()
   }
 
   step() {
     if (!this.active) return false
-
-    if (this.revealTarget > this.revealed && this.revealDur > 0) {
-      const t = Math.min(1, (performance.now() - this.revealStart) / this.revealDur)
-      this.revealed = Math.round(this.revealTarget * t)
-    } else if (this.revealTarget > this.revealed) {
-      this.revealed = this.revealTarget
-    }
 
     let energy = 0
     for (const w of this.words) {
@@ -181,7 +167,7 @@ export class TextPool {
 
     this.draw()
 
-    if (energy < 0.001 && this.revealed >= this.revealTarget && !this.pointer.inside) {
+    if (energy < 0.001 && !this.pointer.inside) {
       this.active = false
     }
     return true
@@ -201,8 +187,7 @@ export class TextPool {
     for (let i = 0; i < this.revealed; i++) {
       const w = this.words[i]
       const alpha = 1 - HEAT_ALPHA * w.heat
-      const c = w.white ? `rgba(${wr},${wg},${wb},${alpha})` : `rgba(${br},${bg},${bb},${alpha})`
-      ctx.fillStyle = c
+      ctx.fillStyle = w.white ? `rgba(${wr},${wg},${wb},${alpha})` : `rgba(${br},${bg},${bb},${alpha})`
       const hot = w.heat > 0.02 || Math.abs(w.x - w.hx) > 0.2 || Math.abs(w.y - w.hy) > 0.2
       if (hot) {
         const rot = Math.max(-0.12, Math.min(0.12, w.vx * 0.015))

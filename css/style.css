@@ -1,4 +1,4 @@
-/* sub rosa — TheStudio V1 (Figma: Home 3 → Home 2, 1440×900 reference) */
+/* sub rosa — TheStudio V1 (Figma: Home 3 → Home 2 → Home 4, 1440×900 reference) */
 
 /* Geist & Geist Mono, self-hosted (same faces Google Fonts serves) */
 
@@ -43,6 +43,8 @@ body {
   overflow-x: hidden;
 }
 
+::selection { background: #FFC252; color: #000; }
+
 #scroll-spacer { width: 1px; }
 
 #stage {
@@ -53,7 +55,7 @@ body {
 
 /* Every positioned text block is trimmed to its cap height / alphabetic
    baseline, exactly like the Figma frames, so Figma y-coordinates map 1:1. */
-.mono-8, .wordmark, #wm-r, #headline, #scene1-caption {
+.mono-8, .wordmark, .rmark, .headline, #scene1-caption {
   text-box: trim-both cap alphabetic;
 }
 
@@ -69,6 +71,50 @@ body {
   color: #fff;
   line-height: normal;
   white-space: nowrap;
+}
+
+.wordmark {
+  position: absolute;
+  top: 15px;
+  font-family: 'Geist', sans-serif;
+  font-weight: 700;
+  font-size: 240px;
+  letter-spacing: -7.2px;
+  line-height: normal;
+  color: #1a1a1a;
+  white-space: nowrap;
+}
+
+.rmark {
+  position: absolute;
+  top: 38px;
+  font-family: 'Geist', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.6px;
+  line-height: normal;
+  color: #333;
+  white-space: nowrap;
+  font-feature-settings: "ss01" 1;
+}
+
+/* shared Figma positions (Home 2 + Home 4 overlay) */
+
+.pos-sub  { left: calc(25% + 31px);    font-feature-settings: "ss04" 1, "ss01" 1; }
+.pos-rosa { left: calc(58.33% + 40px); font-feature-settings: "ss01" 1; }
+.pos-r    { left: calc(91.67% + 27px); }
+
+.pos-deployed { left: 80px;                top: 205px; }
+.pos-latin    { left: calc(25% + 44px);    top: 205px; }
+.pos-cities   { left: calc(58.33% + 57px); top: 205px; }
+.pos-links    { left: calc(91.67% - 15px); top: 205px; }
+
+.pos-cities p { white-space: pre; }
+
+.pos-links a {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 /* ---------- scene 1 ---------- */
@@ -127,58 +173,12 @@ body {
   pointer-events: none;
 }
 
-#scene2.visible {
-  opacity: 1;
-  pointer-events: auto;
-}
+#scene2.visible { opacity: 1; }
+#scene2.interactive { pointer-events: auto; }
 
-.wordmark {
-  position: absolute;
-  top: 15px;
-  font-family: 'Geist', sans-serif;
-  font-weight: 700;
-  font-size: 240px;
-  letter-spacing: -7.2px;
-  line-height: normal;
-  color: #1a1a1a;
-  white-space: nowrap;
-}
-
-#wm-sub {
-  left: calc(25% + 31px);
-  font-feature-settings: "ss04" 1, "ss01" 1;
-}
-
-#wm-rosa {
-  left: calc(58.33% + 40px);
-  font-feature-settings: "ss01" 1;
-}
-
-#wm-r {
-  position: absolute;
-  left: calc(91.67% + 27px);
-  top: 38px;
-  font-family: 'Geist', sans-serif;
-  font-weight: 700;
-  font-size: 20px;
-  letter-spacing: -0.6px;
-  line-height: normal;
-  color: #333;
-  white-space: nowrap;
-  font-feature-settings: "ss01" 1;
-}
-
-#nav-deployed  { left: 80px;                 top: 205px; }
-#nav-latin     { left: calc(25% + 44px);     top: 205px; }
-#nav-cities    { left: calc(58.33% + 57px);  top: 205px; }
-#nav-manifesto { left: calc(91.67% - 15px);  top: 205px; }
-
-#nav-cities p { white-space: pre; }
-
-#headline {
+.headline {
   position: absolute;
   left: calc(25% + 44px);
-  top: 261px;
   font-family: 'Geist', sans-serif;
   font-weight: 500;
   font-size: 24px;
@@ -188,25 +188,33 @@ body {
   white-space: nowrap;
 }
 
-#headline .u {
+.hl-1 { top: 261px; }
+.hl-2 { top: 287px; }
+.hl-3 { top: 313px; }
+
+.headline .u {
   text-decoration: underline;
   text-decoration-skip-ink: none;
   text-underline-position: from-font;
 }
 
-/* founder columns — canvas text pools */
+/* founder columns — canvas text pools, 80px outer margins, fixed 16px gaps */
+
+#scene2 { --colw: calc((100% - 160px - 48px) / 4); }
 
 .col {
   position: absolute;
-  top: 534px;
-  width: 308px;
-  height: 320px;
+  top: 584px;
+  width: var(--colw);
 }
+
+#col-1 { left: 80px; }
+#col-2 { left: calc(80px + var(--colw) + 16px); }
+#col-3 { left: calc(80px + (var(--colw) + 16px) * 2); }
+#col-4 { left: calc(80px + (var(--colw) + 16px) * 3); }
 
 .col canvas {
   display: block;
-  width: 100%;
-  height: 100%;
   cursor: none;
 }
 
@@ -226,4 +234,62 @@ body {
 
 #rose-cursor.on { opacity: 1; }
 
-::selection { background: #333; color: #fff; }
+/* ---------- showcase (Home 4 overlay) ---------- */
+
+#showcase {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: #000;
+}
+
+#showcase[hidden] { display: none; }
+
+#halftone {
+  position: absolute;
+  inset: 0;
+}
+
+#showcase .wordmark.light,
+#showcase .rmark.light { color: #fff; }
+
+.sc-logo {
+  position: absolute;
+  left: 5.56%;
+  top: 55px;
+  width: 66px;
+  height: 50px;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+#close-showcase {
+  position: absolute;
+  left: calc(91.67% - 15px);
+  top: 241px;
+  width: 55px;
+  height: 55px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+#close-showcase::before,
+#close-showcase::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1.5px;
+  height: 76.26px;
+  background: #fff;
+}
+
+#close-showcase::before { transform: translate(-50%, -50%) rotate(45deg); }
+#close-showcase::after  { transform: translate(-50%, -50%) rotate(-45deg); }
+
+#close-showcase:focus-visible { outline: 1px solid #FFC252; outline-offset: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  #flipper { transition: none; }
+}

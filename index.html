@@ -32,33 +32,66 @@
   <!-- Scene 2 — after the initial load -->
   <section id="scene2" aria-label="sub rosa">
 
-    <p id="wm-sub" class="wordmark" data-type data-type-dur="360">sub</p>
-    <p id="wm-rosa" class="wordmark" data-type data-type-dur="480" data-type-delay="360">rosa</p>
-    <p id="wm-r" data-type data-type-dur="120" data-type-delay="840">®</p>
+    <p id="wm-sub" class="wordmark pos-sub" data-type data-type-dur="360">sub</p>
+    <p id="wm-rosa" class="wordmark pos-rosa" data-type data-type-dur="480" data-type-delay="360">rosa</p>
+    <p id="wm-r" class="rmark pos-r" data-type data-type-dur="120" data-type-delay="840">®</p>
 
-    <p id="nav-deployed" class="mono-8" data-type data-type-dur="420" data-type-delay="200">Deployed — Globally</p>
+    <p class="mono-8 pos-deployed" data-type data-type-dur="420" data-type-delay="200">Deployed — Globally</p>
 
-    <div id="nav-latin" class="mono-8" data-type data-type-dur="700" data-type-delay="300">
+    <div class="mono-8 pos-latin" data-type data-type-dur="700" data-type-delay="300">
       Latin, &quot;under the rose&quot;<br>Said of what is spoken in confidence
     </div>
 
-    <div id="nav-cities" class="mono-8" data-type data-type-dur="700" data-type-delay="400">
+    <div class="mono-8 pos-cities" data-type data-type-dur="700" data-type-delay="400">
       <p>London / New York / Detroit</p>
-      <p><span id="clock-lon">22:04.37</span>      <span id="clock-ny">16:04.37</span></p>
+      <p><span class="clock-lon">22:04.37</span>      <span class="clock-ny">16:04.37</span></p>
     </div>
 
-    <p id="nav-manifesto" class="mono-8" data-type data-type-dur="300" data-type-delay="500">Manifesto+</p>
+    <div class="mono-8 pos-links" data-type data-type-dur="300" data-type-delay="500">
+      <p>Manifesto+</p>
+      <p><a id="open-showcase" href="#showcase">showcase+</a></p>
+    </div>
 
-    <p id="headline" data-type data-type-dur="900" data-type-delay="600">The creative leads who built <br>tech’s most controversial brand. <br><span class="u">Get in touch</span> — we'll have a look.</p>
+    <p class="headline hl-1" data-type data-type-dur="280" data-type-delay="600">The creative leads who built </p>
+    <p class="headline hl-2" data-type data-type-dur="310" data-type-delay="880">tech’s most controversial brand. </p>
+    <p class="headline hl-3" data-type data-type-dur="310" data-type-delay="1190"><span class="u">Get in touch</span> — we'll have a look.</p>
 
-    <div class="col" id="col-1" style="left:80px"></div>
-    <div class="col" id="col-2" style="left:calc(25% + 44px)"></div>
-    <div class="col" id="col-3" style="left:calc(50% + 8px)"></div>
-    <div class="col" id="col-4" style="left:calc(75% - 28px)"></div>
+    <div class="col" id="col-1"></div>
+    <div class="col" id="col-2"></div>
+    <div class="col" id="col-3"></div>
+    <div class="col" id="col-4"></div>
 
   </section>
 
 </main>
+
+<!-- Showcase — Home 4 overlay: halftone-revealed images under a white header -->
+<section id="showcase" hidden aria-label="Showcase">
+  <div id="halftone"></div>
+
+  <p class="wordmark pos-sub light">sub</p>
+  <p class="wordmark pos-rosa light">rosa</p>
+  <p class="rmark pos-r light">®</p>
+  <img class="sc-logo" src="assets/rose-logo-white.svg" alt="sub rosa" draggable="false">
+
+  <p class="mono-8 pos-deployed">Deployed — Globally</p>
+
+  <div class="mono-8 pos-latin">
+    Latin, &quot;under the rose&quot;<br>Said of what is spoken in confidence
+  </div>
+
+  <div class="mono-8 pos-cities">
+    <p>London / New York / Detroit</p>
+    <p><span class="clock-lon">22:04.37</span>      <span class="clock-ny">16:04.37</span></p>
+  </div>
+
+  <div class="mono-8 pos-links">
+    <p>Manifesto+</p>
+    <p>showcase+</p>
+  </div>
+
+  <button id="close-showcase" aria-label="Close showcase"></button>
+</section>
 
 <img id="rose-cursor" src="assets/rose-logo.svg" alt="" aria-hidden="true" draggable="false">
 

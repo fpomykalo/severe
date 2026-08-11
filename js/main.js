@@ -1,6 +1,8 @@
-// sub rosa — scroll morph (Home 3 → Home 2), live write-on, text pools.
+// sub rosa — scroll morph (Home 3 → Home 2), live write-on/write-out,
+// text pools, showcase overlay (Home 4) with halftone reveal.
 
 import { TextPool } from './textpool.js'
+import { HalftoneReveal } from './halftone.js'
 
 /* ---------------------------------------------------------------- content */
 
@@ -16,6 +18,20 @@ const COLUMNS = [
   { id: 'col-3', name: 'zivan rosic',    paras: [P2, P3, P1] },
   { id: 'col-4', name: 'noah smith',     paras: [P1, P2, P3] },
 ]
+
+const SHOWCASE_IMAGES = [
+  'Apollo Logo.jpg',
+  'CCP Composition.jpg',
+  'Davos23.jpg',
+  'DevCon3.jpg',
+  'Ferrari.jpg',
+  'HKD-03.jpg',
+  'Iphone14Pro_Mockup01_MicroVolume.jpg',
+  'Open Two Fold Brochure Mockup.jpg',
+  'Sub-branding Wayfinding.jpg',
+  'Superology WIP-01.jpg',
+  'Superology WIP-03.jpg',
+].map(f => encodeURI('assets/images/' + f))
 
 /* ------------------------------------------------------------- typewriter */
 
@@ -35,23 +51,12 @@ class Typewriter {
     this.total = this.full.reduce((s, t) => s + t.length, 0)
     this.dur = +el.dataset.typeDur || 500
     this.delay = +el.dataset.typeDelay || 0
-    this.done = false
-    this.clear()
+    this.applyAt(0)
   }
-  clear() {
-    for (const n of this.nodes) n.nodeValue = ''
-    this.done = false
-  }
-  showAll() {
-    this.nodes.forEach((n, i) => { n.nodeValue = this.full[i] })
-    this.done = true
-  }
-  // t: ms since the write-on began
-  tick(t) {
-    if (this.done) return true
-    const local = t - this.delay
-    if (local <= 0) return false
-    const count = Math.min(this.total, Math.ceil(this.total * (local / this.dur)))
+  // t: position on the master write timeline (ms); idempotent, works both ways
+  applyAt(t) {
+    const local = Math.max(0, Math.min(1, (t - this.delay) / this.dur))
+    const count = Math.round(this.total * local)
     let left = count
     this.nodes.forEach((n, i) => {
       const take = Math.max(0, Math.min(this.full[i].length, left))
@@ -59,8 +64,6 @@ class Typewriter {
       if (n.nodeValue !== next) n.nodeValue = next
       left -= this.full[i].length
     })
-    if (count >= this.total) this.done = true
-    return this.done
   }
 }
 
@@ -74,13 +77,11 @@ function clockString(timeZone) {
   return `${get('hour')}:${get('minute')}.${get('second')}`
 }
 
-function updateClocks() {
-  const lon = document.getElementById('clock-lon')
-  const ny = document.getElementById('clock-ny')
-  if (lon.textContent !== '') {
-    lon.textContent = clockString('Europe/London')
-    ny.textContent = clockString('America/New_York')
-  }
+function stampClocks() {
+  const lon = clockString('Europe/London')
+  const ny = clockString('America/New_York')
+  document.querySelectorAll('.clock-lon').forEach(el => { el.textContent = lon })
+  document.querySelectorAll('.clock-ny').forEach(el => { el.textContent = ny })
 }
 
 /* ------------------------------------------------------------- morph rig */
@@ -123,55 +124,67 @@ function applyMorph(p) {
   scene1Caption.style.opacity = Math.max(0, 1 - p * 3)
 }
 
-/* ------------------------------------------------------------ scene 2 rig */
+/* ----------------------------------------------- write-on master timeline
+   One clock drives every typed element and the canvas pools. Scrolling past
+   the morph plays it forward; scrolling back plays the same timeline in
+   reverse, so the page writes itself out and then deletes itself the same
+   way. */
+
+const POOL_DELAY = i => 700 + i * 120
+const POOL_DUR = 1100
 
 let typers = []
 let pools = []
-let writeOnStarted = false
-let writeOnDone = false
-let writeOnT0 = 0
+let TL_TOTAL = 2400
+let W = 0                 // current position on the timeline (ms)
+let Wtarget = 0
+let driverRaf = null
+let driverPrev = 0
 let clockTimer = null
-let sceneVisible = false
 
-function startWriteOn() {
-  writeOnStarted = true
-  writeOnT0 = performance.now()
-  updateClocks() // stamp real times before their glyphs get revealed
-  pools.forEach((pool, i) => setTimeout(() => { pool.reveal(1100); runPools() }, 700 + i * 120))
-  requestAnimationFrame(writeOnFrame)
-}
+function applyTimeline() {
+  for (const ty of typers) ty.applyAt(W)
+  pools.forEach((pool, i) => pool.setReveal((W - POOL_DELAY(i)) / POOL_DUR))
+  scene2.classList.toggle('visible', W > 0)
+  scene2.classList.toggle('interactive', W >= TL_TOTAL)
 
-function writeOnFrame(now) {
-  const t = now - writeOnT0
-  let allDone = true
-  for (const ty of typers) if (!ty.tick(t)) allDone = false
-  if (!allDone) {
-    requestAnimationFrame(writeOnFrame)
-  } else {
-    writeOnDone = true
-    if (!clockTimer) clockTimer = setInterval(updateClocks, 250)
+  const full = W >= TL_TOTAL
+  if (full && !clockTimer) {
+    stampClocks()
+    clockTimer = setInterval(stampClocks, 250)
+  } else if (!full && clockTimer) {
+    clearInterval(clockTimer)
+    clockTimer = null
   }
 }
 
-function showScene2() {
-  if (sceneVisible) return
-  sceneVisible = true
-  scene2.classList.add('visible')
-  if (!writeOnStarted) {
-    startWriteOn()
-  } else {
-    typers.forEach(t => t.showAll())
-    pools.forEach(p => p.revealInstant())
+function driveTimeline() {
+  if (driverRaf) return
+  driverPrev = performance.now()
+  const frame = now => {
+    const dt = now - driverPrev
+    driverPrev = now
+    const dir = Math.sign(Wtarget - W)
+    W = dir > 0 ? Math.min(Wtarget, W + dt) : Math.max(Wtarget, W - dt)
+    applyTimeline()
+    runPools()
+    if (W !== Wtarget) {
+      driverRaf = requestAnimationFrame(frame)
+    } else {
+      driverRaf = null
+    }
   }
+  driverRaf = requestAnimationFrame(frame)
 }
 
-function hideScene2() {
-  if (!sceneVisible) return
-  sceneVisible = false
-  scene2.classList.remove('visible')
+function setWriteTarget(t) {
+  if (Wtarget === t) return
+  Wtarget = t
+  if (t > 0) stampClocks() // real times are in place before their glyphs appear
+  driveTimeline()
 }
 
-/* -------------------------------------------------------------- main loop */
+/* -------------------------------------------------------------- pool loop */
 
 let poolsRunning = false
 function runPools() {
@@ -180,17 +193,21 @@ function runPools() {
   const frame = () => {
     let any = false
     for (const p of pools) if (p.step()) any = true
-    if (any && sceneVisible) requestAnimationFrame(frame)
+    if (any) requestAnimationFrame(frame)
     else poolsRunning = false
   }
   requestAnimationFrame(frame)
 }
 
+/* ------------------------------------------------------------------ scroll */
+
+let showcaseOpen = false
+
 function onScroll() {
+  if (showcaseOpen) return
   const p = Math.min(1, Math.max(0, window.scrollY / scrollRange()))
   applyMorph(p)
-  if (p >= 0.999) { showScene2(); runPools() }
-  else hideScene2()
+  setWriteTarget(p >= 0.999 ? TL_TOTAL : 0)
 }
 
 /* ------------------------------------------------------------ rose cursor */
@@ -204,6 +221,55 @@ function wireCursor(canvas) {
     runPools()
   })
   canvas.addEventListener('pointerleave', () => roseCursor.classList.remove('on'))
+}
+
+/* --------------------------------------------------------------- showcase */
+
+const showcaseEl = document.getElementById('showcase')
+let halftone = null
+
+function openShowcase() {
+  if (showcaseOpen) return
+  showcaseOpen = true
+  stampClocks()
+  showcaseEl.hidden = false
+  document.body.style.overflow = 'hidden'
+  if (!halftone) {
+    halftone = new HalftoneReveal(document.getElementById('halftone'), SHOWCASE_IMAGES, {
+      dotDensity: 100,
+      dotSize: 0.8,
+      contrast: 1,
+      revealRadius: 0.6,
+      edge: 0.9,
+      follow: 0.1,
+      inkColor: '#1A1A1A',
+      paperColor: '#000000',
+    })
+  }
+  halftone.start()
+}
+
+function closeShowcase() {
+  if (!showcaseOpen) return
+  showcaseOpen = false
+  showcaseEl.hidden = true
+  document.body.style.overflow = ''
+  if (halftone) halftone.stop()
+}
+
+/* ------------------------------------------------------- responsive cols */
+
+function layoutColumns() {
+  COLUMNS.forEach(({ id }, i) => {
+    const holder = document.getElementById(id)
+    const width = holder.clientWidth
+    const pool = pools[i]
+    if (pool && width > 0 && Math.abs(width - pool.width) > 0.5) {
+      pool.relayout(width)
+      holder.style.height = pool.height + 'px'
+    }
+  })
+  runPools()
 }
 
 /* ------------------------------------------------------------------- init */
@@ -228,7 +294,7 @@ async function init() {
       size: 8,
       letterSpacing: 0.8,
       lineHeight: 11,
-      width: 308,
+      width: holder.clientWidth || 308,
       baseColor: [64, 64, 64],
       whiteWords: name.split(' ').length,
     })
@@ -237,13 +303,22 @@ async function init() {
     wireCursor(canvas)
   }
 
+  stampClocks()
   typers = [...document.querySelectorAll('[data-type]')].map(el => new Typewriter(el))
+  TL_TOTAL = Math.max(
+    ...typers.map(t => t.delay + t.dur),
+    ...pools.map((_, i) => POOL_DELAY(i) + POOL_DUR),
+  )
+
+  document.getElementById('open-showcase').addEventListener('click', e => { e.preventDefault(); openShowcase() })
+  document.getElementById('close-showcase').addEventListener('click', closeShowcase)
+  window.addEventListener('keydown', e => { if (e.key === 'Escape') closeShowcase() })
 
   sizeSpacer()
   onScroll()
 
   window.addEventListener('scroll', onScroll, { passive: true })
-  window.addEventListener('resize', () => { sizeSpacer(); onScroll() })
+  window.addEventListener('resize', () => { sizeSpacer(); layoutColumns(); onScroll() })
 }
 
 init()
