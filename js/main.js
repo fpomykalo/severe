@@ -111,27 +111,37 @@ const scene1Caption = document.getElementById('scene1-caption')
 const scene2 = document.getElementById('scene2')
 const spacer = document.getElementById('scroll-spacer')
 
-const END = { x: 80, y: 55, w: 66, h: 50 } // rose logo box in Home 2
+// rose logo box after the morph: Home 2 on desktop, iPhone header on mobile
+const logoEnd = () => (window.innerWidth <= 600
+  ? { x: 20, y: 20, w: 48, h: 36 }
+  : { x: 80, y: 55, w: 66, h: 50 })
 
 const scrollRange = () => Math.round(window.innerHeight * 1.4)
 
 function sizeSpacer() {
-  spacer.style.height = window.innerHeight + scrollRange() + 'px'
+  // mobile content is taller than the viewport — extra scroll after the morph
+  // scrolls the written page itself
+  const extra = Math.max(0, contentHeight - window.innerHeight)
+  spacer.style.height = window.innerHeight + scrollRange() + extra + 'px'
 }
 
 const easeInOut = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
 const lerp = (a, b, t) => a + (b - a) * t
 
-function applyMorph(p) {
+function applyMorph(p, extra = 0) {
   const vw = window.innerWidth
   const vh = window.innerHeight
   const e = easeInOut(p)
+  const END = logoEnd()
+
+  const w0 = Math.min(416, vw - 40)
+  const h0 = w0 * 412 / 416
 
   const cx0 = vw / 2, cy0 = vh / 2 - 33          // Home 3: centered, offset -33px
-  const cx1 = END.x + END.w / 2, cy1 = END.y + END.h / 2
+  const cx1 = END.x + END.w / 2, cy1 = END.y + END.h / 2 - extra
 
-  const w = lerp(416, END.w, e)
-  const h = lerp(412, END.h, e)
+  const w = lerp(w0, END.w, e)
+  const h = lerp(h0, END.h, e)
   const cx = lerp(cx0, cx1, e)
   const cy = lerp(cy0, cy1, e)
 
@@ -225,7 +235,9 @@ let showcaseOpen = false
 function onScroll() {
   if (showcaseOpen) return
   const p = Math.min(1, Math.max(0, window.scrollY / scrollRange()))
-  applyMorph(p)
+  const extra = isMobile() ? Math.max(0, window.scrollY - scrollRange()) : 0
+  applyMorph(p, extra)
+  scene2.style.transform = extra ? `translateY(${-extra}px)` : ''
   setWriteTarget(p >= 0.999 ? TL_TOTAL : 0)
 }
 
@@ -251,32 +263,79 @@ function wireCursor(container) {
 
 let rosaNaturalW = 0
 let titleNaturalH = 0   // trimmed cap height of the wordmark at natural size
-let latinNaturalH = 16  // two 8px mono lines
+let latinNaturalH = 16  // the latin caption block height (16 desktop / 26 mobile)
 let rosaInkOffset = 0   // left side bearing of the "r" glyph at natural size
 let subInkOffset = 0    // left side bearing of the "s" glyph at natural size
+let rosaInkW = 0        // ink width of "rosa" (box minus side bearings)
+
+const isMobile = () => window.innerWidth <= 600
+
+let mobileColsTop = 0   // set by fitTitle, consumed by layoutColumns
+let contentHeight = 0   // total document height on mobile (set by layoutColumns)
 
 function fitTitle() {
   if (!rosaNaturalW) return
+  const closeBtn = document.getElementById('close-showcase')
 
-  // rosa spans exactly the last two columns (zivan + noah, incl. their 16px
-  // gap) — that ratio sets the scale for the whole title. sub keeps its
-  // anchor on the kito kitev column.
+  if (isMobile()) {
+    // iPhone frames: sub and rosa stack, both inked on the 20px rail, rosa's
+    // ink spanning the full width between the 20px margins; wordmark #333
+    const rail = 20
+    const target = window.innerWidth - 40
+    const s = Math.max(0.2, target / rosaInkW)
+
+    const subCapTop = 38
+    const rosaCapTop = Math.round(subCapTop + 153 * s)
+
+    document.querySelectorAll('.pos-sub').forEach(el => {
+      el.style.left = Math.round(rail - subInkOffset * s) + 'px'
+      el.style.top = subCapTop + 'px'
+      el.style.transform = `scale(${s})`
+    })
+    document.querySelectorAll('.pos-rosa').forEach(el => {
+      el.style.left = Math.round(rail - rosaInkOffset * s) + 'px'
+      el.style.top = rosaCapTop + 'px'
+      el.style.transform = `scale(${s})`
+    })
+
+    const navTop = Math.round(rosaCapTop + titleNaturalH * s + 20)
+    document.querySelectorAll('.pos-latin, .pos-cities').forEach(el => { el.style.top = navTop + 'px' })
+    document.querySelectorAll('.pos-latin').forEach(el => { el.style.left = rail + 'px' })
+
+    const headTop = navTop + 26 + 40  // latin block is 3 lines on mobile
+    ;[['hl-1', 0], ['hl-2', 26], ['hl-3', 52]].forEach(([cls, off]) => {
+      const el = document.querySelector('.' + cls)
+      if (el) {
+        el.style.top = (headTop + off) + 'px'
+        el.style.left = rail + 'px'
+      }
+    })
+
+    mobileColsTop = headTop + 169
+    if (closeBtn) closeBtn.style.top = (navTop + 36) + 'px'
+    return
+  }
+
+  // desktop: rosa's INK spans exactly the last two columns (zivan + noah,
+  // incl. their 16px gap) — that ratio sets the scale for the whole title.
+  // sub keeps its ink anchored on the kito kitev column.
   const colsEl = document.getElementById('cols')
   const col1 = document.getElementById('col-1')  // kito
   const col3 = document.getElementById('col-3')  // zivan
   const subLeft = colsEl.offsetLeft + col1.offsetLeft
   const rosaLeft = colsEl.offsetLeft + col3.offsetLeft
   const rosaTargetW = (window.innerWidth - 80) - rosaLeft
-  const s = Math.max(0.2, rosaTargetW / rosaNaturalW)
+  const s = Math.max(0.2, rosaTargetW / rosaInkW)
 
-  // shift the box left so the INK of the s sits on the column rail
-  const subBoxLeft = Math.round(subLeft - subInkOffset * s)
+  // shift each box left by its first glyph's side bearing so INK sits on rails
   document.querySelectorAll('.pos-sub').forEach(el => {
-    el.style.left = subBoxLeft + 'px'
+    el.style.left = Math.round(subLeft - subInkOffset * s) + 'px'
+    el.style.top = '15px'
     el.style.transform = `scale(${s})`
   })
   document.querySelectorAll('.pos-rosa').forEach(el => {
-    el.style.left = rosaLeft + 'px'
+    el.style.left = Math.round(rosaLeft - rosaInkOffset * s) + 'px'
+    el.style.top = '15px'
     el.style.transform = `scale(${s})`
   })
 
@@ -285,12 +344,11 @@ function fitTitle() {
   document.querySelectorAll('.pos-deployed, .pos-latin, .pos-cities, .pos-links')
     .forEach(el => { el.style.top = navTop + 'px' })
 
-  // latin block on sub's left; cities on the ink of the r's stem
+  // latin block on sub's rail; cities on the r's ink (= zivan's rail)
   document.querySelectorAll('.pos-latin').forEach(el => { el.style.left = subLeft + 'px' })
-  const citiesLeft = Math.round(rosaLeft + rosaInkOffset * s)
-  document.querySelectorAll('.pos-cities').forEach(el => { el.style.left = citiesLeft + 'px' })
+  document.querySelectorAll('.pos-cities').forEach(el => { el.style.left = rosaLeft + 'px' })
 
-  // headline: 40px under the latin block, aligned with sub's left
+  // headline: 40px under the latin block, aligned with sub's rail
   const headTop = navTop + latinNaturalH + 40
   ;[['hl-1', 0], ['hl-2', 26], ['hl-3', 52]].forEach(([cls, off]) => {
     const el = document.querySelector('.' + cls)
@@ -301,7 +359,6 @@ function fitTitle() {
   })
 
   // showcase X: under Manifesto+/showcase+, right-aligned with them, 20px away
-  const closeBtn = document.getElementById('close-showcase')
   if (closeBtn) closeBtn.style.top = (navTop + latinNaturalH + 20) + 'px'
 }
 
@@ -344,8 +401,19 @@ function closeShowcase() {
 /* ------------------------------------------------------- responsive cols */
 
 function layoutColumns() {
+  const cols = document.getElementById('cols')
+  const mobile = isMobile()
+
   COLUMNS.forEach(({ id }, i) => {
     const holder = document.getElementById(id)
+    // on mobile every column is full width and they stack with 40px gaps
+    if (mobile) {
+      holder.style.width = '100%'
+      holder.style.left = '0'
+    } else {
+      holder.style.width = ''
+      holder.style.left = ''
+    }
     const width = holder.clientWidth
     const pool = pools[i]
     if (pool && width > 0 && Math.abs(width - pool.width) > 0.5) {
@@ -353,10 +421,25 @@ function layoutColumns() {
       holder.style.height = pool.height + 'px'
     }
   })
-  const cols = document.getElementById('cols')
-  const h = Math.max(...pools.map(p => p.height), 0)
-  cols.style.height = h + 'px'
-  cols.style.top = Math.round(window.innerHeight - 30 - h) + 'px'
+
+  if (mobile) {
+    let y = 0
+    COLUMNS.forEach(({ id }, i) => {
+      const holder = document.getElementById(id)
+      holder.style.top = y + 'px'
+      y += (pools[i] ? pools[i].height : 0) + 40
+    })
+    const total = Math.max(0, y - 40)
+    cols.style.height = total + 'px'
+    cols.style.top = mobileColsTop + 'px'
+    contentHeight = mobileColsTop + total + 21
+  } else {
+    COLUMNS.forEach(({ id }) => { document.getElementById(id).style.top = '' })
+    const h = Math.max(...pools.map(p => p.height), 0)
+    cols.style.height = h + 'px'
+    cols.style.top = Math.round(window.innerHeight - 30 - h) + 'px'
+    contentHeight = 0
+  }
   runPools()
 }
 
@@ -410,8 +493,12 @@ async function init() {
   {
     const mctx = document.createElement('canvas').getContext('2d')
     mctx.font = '700 240px "Geist"'
+    if ('letterSpacing' in mctx) mctx.letterSpacing = '-7.2px'
     rosaInkOffset = Math.max(0, -mctx.measureText('r').actualBoundingBoxLeft)
     subInkOffset = Math.max(0, -mctx.measureText('s').actualBoundingBoxLeft)
+    const met = mctx.measureText('rosa')
+    rosaInkW = met.actualBoundingBoxRight - Math.max(0, -met.actualBoundingBoxLeft)
+    if (!(rosaInkW > 0)) rosaInkW = rosaNaturalW
   }
   fitTitle()
 
@@ -425,13 +512,30 @@ async function init() {
 
   document.getElementById('open-showcase').addEventListener('click', e => { e.preventDefault(); openShowcase() })
   document.getElementById('close-showcase').addEventListener('click', closeShowcase)
-  window.addEventListener('keydown', e => { if (e.key === 'Escape') closeShowcase() })
 
+  // mobile menu
+  const menu = document.getElementById('menu')
+  const openMenu = () => { menu.hidden = false }
+  const closeMenu = () => { menu.hidden = true }
+  document.getElementById('menu-btn').addEventListener('click', openMenu)
+  document.getElementById('sc-menu-btn').addEventListener('click', openMenu)
+  document.getElementById('close-menu').addEventListener('click', closeMenu)
+  document.getElementById('menu-showcase').addEventListener('click', e => {
+    e.preventDefault()
+    closeMenu()
+    openShowcase()
+  })
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeMenu(); closeShowcase() }
+  })
+
+  fitTitle()
+  layoutColumns()
   sizeSpacer()
   onScroll()
 
+  window.addEventListener('resize', () => { fitTitle(); layoutColumns(); sizeSpacer(); onScroll() })
   window.addEventListener('scroll', onScroll, { passive: true })
-  window.addEventListener('resize', () => { sizeSpacer(); layoutColumns(); fitTitle(); onScroll() })
 }
 
 init()

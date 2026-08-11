@@ -133,8 +133,10 @@ body {
 
 #scene1-caption {
   position: absolute;
-  left: calc(50% - 208px);  /* left edge of the centered 416px illustration */
-  top: calc(50% + 213px);   /* 40px under it (663px at 900) */
+  /* left edge of the centered illustration (416px, or vw-40 on mobile),
+     40px under its bottom — same formula at every size */
+  left: calc(50% - min(416px, 100vw - 40px) / 2);
+  top: calc(50% - 33px + min(416px, 100vw - 40px) * 0.4952 + 40px);
   font-family: 'Geist Mono', monospace;
   font-size: 8px;
   letter-spacing: 0.8px;
@@ -322,6 +324,136 @@ body {
 #close-showcase::after  { transform: translate(-50%, -50%) rotate(-45deg); }
 
 #close-showcase:focus-visible { outline: 1px solid #FFC252; outline-offset: 4px; }
+
+/* hamburger (mobile only) — three 15×2 white bars, 5px pitch */
+
+.menu-btn {
+  display: none;
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  width: 15px;
+  height: 12px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+}
+
+.menu-btn span {
+  position: absolute;
+  left: 0;
+  width: 15px;
+  height: 2px;
+  background: #fff;
+}
+
+.menu-btn span:nth-child(1) { top: 0; }
+.menu-btn span:nth-child(2) { top: 5px; }
+.menu-btn span:nth-child(3) { top: 10px; }
+
+/* mobile menu overlay (iPhone 16 - 3) */
+
+#menu {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+#menu[hidden] { display: none; }
+
+.menu-link {
+  position: absolute;
+  left: 20px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 36px;
+  font-weight: 400;
+  letter-spacing: 3.6px;
+  text-transform: uppercase;
+  color: #fff;
+  line-height: normal;
+  white-space: nowrap;
+  text-box: trim-both cap alphabetic;
+}
+
+.menu-link:nth-of-type(1) { top: 20px; }
+.menu-link:nth-of-type(2) { top: 66px; }
+
+.menu-link a { color: inherit; text-decoration: none; cursor: pointer; }
+
+#close-menu {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  width: 13px;
+  height: 13px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+#close-menu::before,
+#close-menu::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1px;
+  height: 17px;
+  background: #fff;
+}
+
+#close-menu::before { transform: translate(-50%, -50%) rotate(45deg); }
+#close-menu::after  { transform: translate(-50%, -50%) rotate(-45deg); }
+
+/* showcase drag hint (mobile only) */
+
+#sc-hint {
+  display: none;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 53px;
+  top: auto;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* ---------- mobile (iPhone 16 frames) ---------- */
+
+@media (max-width: 600px) {
+  .wordmark { color: #333; }             /* mobile wordmark grey */
+  #showcase .wordmark.light { color: #fff; }
+
+  .headline { color: #333; }
+
+  .pos-deployed { display: none; }        /* no Deployed — Globally on mobile */
+  .pos-links { display: none; }           /* replaced by the hamburger menu */
+
+  .pos-latin { white-space: normal; width: 132px; }
+
+  .pos-cities { left: auto !important; right: 19px; }
+
+  .pos-r { right: 59px; top: 68px; }
+
+  .menu-btn { display: block; }
+
+  .sc-logo { width: 48px; height: 36px; top: 20px; left: 20px; }
+
+  #cols {
+    left: 20px;
+    right: 20px;
+    cursor: auto;
+  }
+
+  #rose-cursor { display: none; }
+
+  #close-showcase { right: 19px; }
+
+  #sc-hint { display: block; }
+
+  #halftone { touch-action: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   #flipper { transition: none; }

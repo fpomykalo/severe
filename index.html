@@ -52,6 +52,8 @@
       <p><a id="open-showcase" href="#showcase">showcase+</a></p>
     </div>
 
+    <button class="menu-btn" id="menu-btn" aria-label="Menu"><span></span><span></span><span></span></button>
+
     <p class="headline hl-1" data-type data-type-dur="280" data-type-delay="600">The creative leads who built </p>
     <p class="headline hl-2" data-type data-type-dur="310" data-type-delay="880">tech’s most controversial brand. </p>
     <p class="headline hl-3" data-type data-type-dur="310" data-type-delay="1190"><span class="u">Get in touch</span> — we'll have a look.</p>
@@ -94,6 +96,15 @@
   </div>
 
   <button id="close-showcase" aria-label="Close showcase"></button>
+  <button class="menu-btn" id="sc-menu-btn" aria-label="Menu"><span></span><span></span><span></span></button>
+  <p id="sc-hint" class="mono-8">drag around the screen to reveal</p>
+</section>
+
+<!-- Mobile menu overlay (iPhone 16 - 3) -->
+<section id="menu" hidden aria-label="Menu">
+  <p class="menu-link">Manifesto+</p>
+  <p class="menu-link"><a id="menu-showcase" href="#showcase">showcase+</a></p>
+  <button id="close-menu" aria-label="Close menu"></button>
 </section>
 
 <img id="rose-cursor" src="assets/rose-logo.svg" alt="" aria-hidden="true" draggable="false">

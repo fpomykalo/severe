@@ -172,7 +172,8 @@ export class HalftoneReveal {
     gl.uniform3fv(this.u.uInk, hexToRgb(opts.inkColor ?? '#1A1A1A'))
     gl.uniform3fv(this.u.uPaper, hexToRgb(opts.paperColor ?? '#000000'))
     gl.uniform1f(this.u.uContrast, opts.contrast ?? 1)
-    gl.uniform1f(this.u.uRevealRadius, opts.revealRadius ?? 0.6)
+    this.baseRadius = opts.revealRadius ?? 0.6
+    gl.uniform1f(this.u.uRevealRadius, this.baseRadius)
     gl.uniform1f(this.u.uEdge, opts.edge ?? 0.9)
     gl.uniform1i(this.u.tMap, 0)
 
@@ -222,6 +223,9 @@ export class HalftoneReveal {
       canvas.height = Math.round(h * dpr)
       gl.viewport(0, 0, canvas.width, canvas.height)
       gl.uniform2f(this.u.iResolution, canvas.width, canvas.height)
+      // the shader normalizes distances by height; on portrait screens shrink
+      // the reveal so the lens doesn't swallow the whole display
+      gl.uniform1f(this.u.uRevealRadius, w < h ? this.baseRadius * 0.58 : this.baseRadius)
     }
     this.ro = new ResizeObserver(this.resize)
     this.ro.observe(container)
