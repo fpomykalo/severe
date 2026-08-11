@@ -253,6 +253,7 @@ let rosaNaturalW = 0
 let titleNaturalH = 0   // trimmed cap height of the wordmark at natural size
 let latinNaturalH = 16  // two 8px mono lines
 let rosaInkOffset = 0   // left side bearing of the "r" glyph at natural size
+let subInkOffset = 0    // left side bearing of the "s" glyph at natural size
 
 function fitTitle() {
   if (!rosaNaturalW) return
@@ -268,8 +269,10 @@ function fitTitle() {
   const rosaTargetW = (window.innerWidth - 80) - rosaLeft
   const s = Math.max(0.2, rosaTargetW / rosaNaturalW)
 
+  // shift the box left so the INK of the s sits on the column rail
+  const subBoxLeft = Math.round(subLeft - subInkOffset * s)
   document.querySelectorAll('.pos-sub').forEach(el => {
-    el.style.left = subLeft + 'px'
+    el.style.left = subBoxLeft + 'px'
     el.style.transform = `scale(${s})`
   })
   document.querySelectorAll('.pos-rosa').forEach(el => {
@@ -407,8 +410,8 @@ async function init() {
   {
     const mctx = document.createElement('canvas').getContext('2d')
     mctx.font = '700 240px "Geist"'
-    const met = mctx.measureText('r')
-    rosaInkOffset = Math.max(0, -met.actualBoundingBoxLeft)
+    rosaInkOffset = Math.max(0, -mctx.measureText('r').actualBoundingBoxLeft)
+    subInkOffset = Math.max(0, -mctx.measureText('s').actualBoundingBoxLeft)
   }
   fitTitle()
 
