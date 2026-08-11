@@ -20,6 +20,7 @@ const COLUMNS = [
 ]
 
 const SHOWCASE_IMAGES = [
+  'AIPCon2.jpg',
   'Apollo Logo.jpg',
   'CCP Composition.jpg',
   'Davos23.jpg',
