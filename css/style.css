@@ -465,9 +465,15 @@ body.menu-open .menu-btn { visibility: hidden; }
 
   #rose-cursor { display: none; }
 
-  #close-showcase { right: 19px; }
+  /* X centered at the bottom, drag hint right above it */
+  #close-showcase {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 30px;
+  }
 
-  #sc-hint { display: block; }
+  #sc-hint { display: block; bottom: 105px; }
 
   #halftone { touch-action: none; }
 }

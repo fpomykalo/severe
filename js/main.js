@@ -347,8 +347,9 @@ function applyMobileHeader(c, scope) {
     if (mask) mask.style.height = (navTop + 26 + 20) + 'px'
   }
   if (scope === '#showcase') {
+    // mobile X is bottom-centered (CSS) — clear any inline top from desktop
     const closeBtn = document.getElementById('close-showcase')
-    if (closeBtn) closeBtn.style.top = (navTop + 36) + 'px'
+    if (closeBtn) closeBtn.style.top = 'auto'
   }
 }
 
