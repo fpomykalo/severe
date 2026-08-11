@@ -13,6 +13,7 @@ const P3 = `brand designer and creative director based in London, working with t
 const GAP = ' '.repeat(10)
 
 const COLUMNS = [
+  { id: 'col-0', name: 'cody duma',      paras: [P2, P3, P1] },
   { id: 'col-1', name: 'kito kitev',     paras: [P1, P2, P3] },
   { id: 'col-2', name: 'filip pomykalo', paras: [P3, P1, P2] },
   { id: 'col-3', name: 'zivan rosic',    paras: [P2, P3, P1] },

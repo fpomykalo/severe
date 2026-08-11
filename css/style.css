@@ -223,7 +223,7 @@ body {
   right: 80px;
   top: 584px;
   cursor: none;
-  --colw: calc((100% - 48px) / 4);
+  --colw: calc((100% - 4 * 16px) / 5);
 }
 
 .col {
@@ -232,10 +232,11 @@ body {
   width: var(--colw);
 }
 
-#col-1 { left: 0; }
-#col-2 { left: calc(var(--colw) + 16px); }
-#col-3 { left: calc((var(--colw) + 16px) * 2); }
-#col-4 { left: calc((var(--colw) + 16px) * 3); }
+.col:nth-child(1) { left: 0; }
+.col:nth-child(2) { left: calc(var(--colw) + 16px); }
+.col:nth-child(3) { left: calc((var(--colw) + 16px) * 2); }
+.col:nth-child(4) { left: calc((var(--colw) + 16px) * 3); }
+.col:nth-child(5) { left: calc((var(--colw) + 16px) * 4); }
 
 .col canvas {
   display: block;
