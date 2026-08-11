@@ -313,7 +313,7 @@ function fitTitle() {
 
   if (isMobile()) {
     // iPhone frames: sub and rosa stack, both inked on the 20px rail, rosa's
-    // ink spanning the full width between the 20px margins; wordmark #333
+    // ink spanning the full width between the 20px margins
     const rail = 20
     const target = window.innerWidth - 40
     const s = Math.max(0.2, target / rosaInkW)

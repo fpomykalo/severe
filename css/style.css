@@ -81,7 +81,7 @@ body {
   font-size: 240px;
   letter-spacing: -7.2px;
   line-height: normal;
-  color: #1a1a1a;
+  color: #262626;
   white-space: nowrap;
 }
 
@@ -93,7 +93,7 @@ body {
   font-size: 20px;
   letter-spacing: -0.6px;
   line-height: normal;
-  color: #333;
+  color: #262626;
   white-space: nowrap;
   font-feature-settings: "ss01" 1;
 }
@@ -440,11 +440,6 @@ body.menu-open .menu-btn { visibility: hidden; }
 /* ---------- mobile (iPhone 16 frames) ---------- */
 
 @media (max-width: 600px) {
-  .wordmark { color: #333; }             /* mobile wordmark grey */
-  #showcase .wordmark.light { color: #fff; }
-
-  .headline { color: #333; }
-
   .pos-deployed { display: none; }        /* no Deployed — Globally on mobile */
   .pos-links { display: none; }           /* replaced by the hamburger menu */
 
