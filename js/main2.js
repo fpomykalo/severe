@@ -464,11 +464,11 @@ function fitTitle() {
 
   // desktop (Home 2/6): sub's ink anchors on the second column rail (filip
   // pomykalo); rosa's ink ends on the right content margin. The 960px ink
-  // span of the whole composition sets the uniform scale.
-  const colsEl = document.getElementById('cols')
-  const col1 = document.getElementById('col-1')  // filip — second column
-  const rail2 = colsEl.offsetLeft + col1.offsetLeft
+  // span of the whole composition sets the uniform scale. The rail is
+  // computed, not read from the DOM — during a mobile→desktop resize the
+  // columns still carry their mobile inline styles when this runs.
   const vw = window.innerWidth
+  const rail2 = 80 + (vw - 160 - 3 * 16) / 4 + 16
   const s = Math.max(0.2, (vw - 80 - rail2) / TITLE_SPAN)
 
   const subLeft1 = rail2 - subInkOffset * s
@@ -559,6 +559,9 @@ function closeShowcase() {
   showcaseEl.hidden = true
   document.body.style.overflow = manifestoOpen ? 'hidden' : ''
   if (halftone) halftone.stop()
+  // openShowcase ran fitTitle, which resets every header (the manifesto's
+  // included) to the expanded state — restore the manifesto's real position
+  if (manifestoOpen) applyManifestoHeader(mfC)
 }
 
 /* -------------------------------------------------------------- manifesto
@@ -610,7 +613,11 @@ function applyManifestoHeader(c) {
     el.style.transform = `scale(${s})`
   })
   const navTop = Math.round(L(d.navTop1, d.navTop2))
-  q('.pos-deployed, .pos-latin, .pos-cities, .pos-links').forEach(el => { el.style.top = navTop + 'px' })
+  // one scoped query per class — a grouped selector would only scope its
+  // first item and leak onto the scene2/showcase headers
+  for (const sel of ['.pos-deployed', '.pos-latin', '.pos-cities', '.pos-links']) {
+    q(sel).forEach(el => { el.style.top = navTop + 'px' })
+  }
   q('.pos-latin').forEach(el => { el.style.left = d.rail2 + 'px' })
   q('.pos-cities').forEach(el => { el.style.left = Math.round(d.citiesLeft) + 'px' })
 
@@ -849,6 +856,15 @@ async function init() {
   onScroll()
 
   window.addEventListener('resize', () => {
+    if (introLocked && !isMobile()) {
+      // growing back to desktop from the locked mobile state: the one-way
+      // intro is a mobile-only concept — restore the reversible desktop
+      // intro, parked at its end (morph complete, page written)
+      introLocked = false
+      scene1Caption.style.display = ''
+      sizeSpacer()
+      window.scrollTo(0, scrollRange())
+    }
     fitTitle()
     layoutColumns()
     sizeSpacer()
