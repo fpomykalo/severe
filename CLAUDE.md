@@ -6,24 +6,36 @@ Static site, no build step: plain HTML/CSS/ES modules at the repo root.
 
 - **Live site:** https://fpomykalo.github.io/the-studio/ (GitHub Pages, deploys
   automatically from `main` root on every push — always push finished work to
-  `main`)
-- **Figma frames:** Home 3 (desktop intro) → Home 2 (desktop main) → Home 4
-  (desktop showcase overlay); iPhone 16 - 1..5 (mobile: intro, main expanded,
-  menu overlay, showcase, collapsed header). Cross-reference Figma when the
-  user says they changed something there.
+  `main`). **v2 lives at /v2.html** — a full fork kept beside v1 on the same
+  branch so the initial version is never lost. Active work happens on v2;
+  don't touch the v1 files (index.html, style.css, main.js, textpool.js).
+- **Figma frames:** Home 3 (desktop intro) → Home 2 (desktop main, now FOUR
+  columns) → Home 4 (desktop showcase overlay) → Home 6/7 (desktop manifesto,
+  expanded/collapsed header); iPhone 16 - 1..6 (mobile: intro, main expanded,
+  menu overlay, showcase, collapsed header, manifesto). Cross-reference Figma
+  when the user says they changed something there.
 
 ## Structure
 
 ```
-index.html          all markup + copy (scene1, morph, scene2, showcase, menu)
-css/style.css       type/positions; mobile media query at max-width 600px
-js/main.js          orchestration: scroll morph, write-on/out timeline,
-                    fitTitle layout engine, clocks, showcase, mobile header
-js/textpool.js      canvas text-pool effect (pretext layout + spring physics)
-js/halftone.js      WebGL2 halftone-reveal (ported from react-bits) + cycling
+index.html          v1 — frozen snapshot of the initial version
+css/style.css       v1 styles (frozen)
+js/main.js          v1 orchestration (frozen)
+js/textpool.js      v1 text pool (frozen)
+v2.html             v2 markup: scene1, morph, scene2 (4 columns), showcase,
+                    manifesto overlay, menu
+css/style2.css      v2 styles (name links, manifesto, 4-col grid)
+js/main2.js         v2 orchestration: + manifesto page, name links,
+                    desktop header collapse, no rose cursor
+js/textpool2.js     v2 pool: first N words static (DOM links, no physics)
+js/halftone.js      WebGL2 halftone-reveal (shared by v1 and v2) + cycling
 vendor/pretext/     @chenglou/pretext 0.0.8 dist (MIT), do not modify
-assets/             rose SVGs (exported byte-exact from Figma), Geist woff2
-                    (self-hosted), showcase images in assets/images/
+assets/             rose SVGs, Geist woff2 (self-hosted), showcase images in
+                    assets/images/. v2 logo: assets/rose-logo2.svg +
+                    rose-logo2-white.svg (recolored #262626/#fff copies of
+                    the user-uploaded assets/svg/rose-logo 2.svg, 41.4:50 —
+                    narrower than v1's 66:50; morph end boxes are
+                    {80,55,41×50} desktop / {20,20,30×36} mobile)
 ```
 
 ## How the site works
@@ -34,14 +46,43 @@ assets/             rose SVGs (exported byte-exact from Figma), Geist woff2
   back plays it in reverse. On mobile the intro is one-way: after the morph,
   `introLocked` collapses the intro scroll region until a page refresh.
 - **fitTitle() is the layout engine.** Everything in the header derives from
-  it. Desktop rules: sub's ink anchors on the kito column rail; rosa's ink
-  spans exactly the last two columns (zivan+noah incl. 16px gap) which sets
-  the uniform title scale; nav row 20px under the title; London on the r's
-  ink; Manifesto+/® right-aligned at vw-80; headline 40px under the Latin
-  block on sub's rail. Mobile rules: ink rails at 20px; rosa ink spans
-  vw-40; header collapses (expanded 16-2 ↔ collapsed 16-5) over the first
-  200px of scroll via `applyMobileHeader(c, scope)`; showcase mirrors the
-  current collapse state in white.
+  it. v1 desktop rules (5 cols): sub's ink anchors on the kito column rail;
+  rosa's ink spans exactly the last two columns which sets the uniform title
+  scale. v2 desktop rules (4 cols — kito/filip/zivan/noah at 80/404/728/1052,
+  308 wide at 1440): sub's ink anchors on the SECOND column rail (filip);
+  rosa's ink ends at vw-80; the composition's 960px natural ink span
+  (TITLE_SPAN, sub ink start → rosa ink end at 240px, rosa box offset 489
+  from sub's) sets the scale — s≈1.0 at 1440, matching Figma. Both: nav row
+  20px under the title; London on rosa's ink; Manifesto+/® right-aligned at
+  vw-80; headline 40px under the Latin block on sub's rail. Mobile rules:
+  ink rails at 20px; rosa ink spans vw-40; header collapses (expanded 16-2 ↔
+  collapsed 16-5) over the first 200px of scroll via
+  `applyMobileHeader(c, scope)`; showcase mirrors the current collapse state
+  in white.
+- **v2 manifesto (Home 6/7, iPhone 16-6):** `Manifesto+` (or the mobile menu)
+  opens `#manifesto` — a fixed, self-scrolling overlay (z15, under showcase
+  z20/menu z40) with fixed header elements and a black #mf-mask. Desktop: the
+  header collapses over the first 200px of overlay scroll into a one-line
+  "sub rosa" (cap height 62 at top 43, rosa box offset 458·s2, nav row rises
+  navTop→125); content = gray headline (as Home 2), mono label
+  "the manifesto / last updated:…" at x80, white 55px X at vw-80 (scrolls
+  with content), body Geist 400 16/24 ls-0.32 white, width = two columns +
+  gutter (632 at 1440) on the filip rail, all starting 104px under the
+  headline (y434 at 1440); "top of the page ↑" 70px under the body (smooth
+  scrolls back up), 104px bottom padding. Mobile: header always collapsed
+  (16-5 state); label 39px under the latin block, X right edge vw-20
+  centered on the label, body 14/20 ls-0.28 70px under the label, no
+  headline. Esc priority: showcase → menu → manifesto.
+- **v2 founder names are DOM links** (`.name-link`, textpool2 `staticWords`):
+  the first name+surname words are skipped by the canvas draw/physics and
+  rendered as real `<a>`s over the pool (8px Geist Mono uppercase white,
+  cap-trimmed, top = baseline − measured cap height — pixel-verified level
+  with the canvas words on the same line). Hover underlines; each word
+  reveals with the master timeline like canvas words (`syncNameLinks`).
+  LinkedIn URLs in COLUMNS are placeholder slugs until the user provides
+  real ones. v2 has NO rose cursor — default cursor; body copy still stirs
+  (textpool listens on its own canvas; #cols pointermove just wakes the
+  pool loop).
 - **Ink metrics are pixel-calibrated constants** (`rosaInkOffset=16`,
   `subInkOffset=9`, `rosaInkW=464` at 240px): canvas measureText cannot see
   the ss01/ss04 alternate glyphs, so don't "fix" these back to measured

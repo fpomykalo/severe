@@ -1,0 +1,612 @@
+/* sub rosa v2 — TheStudio V1 (Figma: Home 3 → Home 2 → Home 4 → Home 6/7, 1440×900 reference)
+   Forked from style.css: four founder columns, DOM name links over the pools,
+   no rose cursor, manifesto overlay (Home 6/7 desktop, iPhone 16-6 mobile). */
+
+/* Geist & Geist Mono, self-hosted (same faces Google Fonts serves) */
+
+@font-face {
+  font-family: 'Geist';
+  src: url('../assets/fonts/Geist-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist';
+  src: url('../assets/fonts/Geist-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist';
+  src: url('../assets/fonts/Geist-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('../assets/fonts/GeistMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('../assets/fonts/GeistMono-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { background: #000; }
+
+body {
+  background: #000;
+  font-family: 'Geist', sans-serif;
+  overflow-x: hidden;
+}
+
+::selection { background: #FFC252; color: #000; }
+
+#scroll-spacer { width: 1px; }
+
+#stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Every positioned text block is trimmed to its cap height / alphabetic
+   baseline, exactly like the Figma frames, so Figma y-coordinates map 1:1. */
+.mono-8, .wordmark, .rmark, .headline, .mf-headline, #scene1-caption {
+  text-box: trim-both cap alphabetic;
+}
+
+/* ---------- shared type ---------- */
+
+.mono-8 {
+  position: absolute;
+  font-family: 'Geist Mono', monospace;
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #fff;
+  line-height: normal;
+  white-space: nowrap;
+}
+
+.wordmark {
+  position: absolute;
+  top: 15px;
+  font-family: 'Geist', sans-serif;
+  font-weight: 700;
+  font-size: 240px;
+  letter-spacing: -7.2px;
+  line-height: normal;
+  color: #262626;
+  white-space: nowrap;
+}
+
+.rmark {
+  position: absolute;
+  top: 38px;
+  font-family: 'Geist', sans-serif;
+  font-weight: 400;
+  font-size: 20px;
+  letter-spacing: -0.6px;
+  line-height: normal;
+  color: #262626;
+  white-space: nowrap;
+  font-feature-settings: "ss01" 1;
+}
+
+/* shared Figma positions (Home 2 + Home 4 + Home 6 headers) */
+
+/* the whole title scales uniformly (JS): sub's ink sits on the second column
+   rail and rosa's ink ends on the right content margin */
+.pos-sub {
+  left: calc(25% + 31px);
+  font-feature-settings: "ss04" 1, "ss01" 1;
+  transform-origin: left top;
+}
+.pos-rosa {
+  left: calc(58.33% + 40px);
+  font-feature-settings: "ss01" 1;
+  transform-origin: left top;
+}
+.pos-r    { right: 80px; } /* ® right edge on rosa's right edge */
+
+/* the nav row's top and the cities' left are set by JS: 20px under the scaled
+   title, cities on rosa's ink, links right-aligned on rosa's right */
+.pos-deployed { left: 80px;             top: 205px; }
+.pos-latin    { left: calc(25% + 44px); top: 205px; }
+.pos-cities   { left: calc(58.33% + 57px); top: 205px; }
+.pos-links    { right: 80px; text-align: right; top: 205px; }
+
+.pos-cities p { white-space: pre; }
+
+.pos-links a {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* ---------- scene 1 ---------- */
+
+#scene1-caption {
+  position: absolute;
+  /* left edge of the centered illustration (416px, or vw-40 on mobile),
+     40px under its bottom — same formula at every size */
+  left: calc(50% - min(416px, 100vw - 40px) / 2);
+  top: calc(50% - 33px + min(416px, 100vw - 40px) * 0.4952 + 40px);
+  font-family: 'Geist Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #fff;
+  line-height: normal;
+  white-space: nowrap;
+}
+
+/* ---------- morph ---------- */
+
+#morph {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 416px;
+  height: 412px;
+  pointer-events: none;
+  /* centered before the first JS frame runs, so a hard refresh never flashes
+     the illustration in the corner */
+  transform: translate(calc(50vw - 208px), calc(50vh - 239px));
+  perspective: 1200px;
+  will-change: transform, width, height;
+}
+
+#flipper {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+#flipper img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  backface-visibility: hidden;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+#face-logo { transform: rotateY(180deg); }
+
+/* ---------- scene 2 ---------- */
+
+#scene2 {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#scene2.visible { opacity: 1; }
+#scene2.interactive { pointer-events: auto; }
+
+.headline {
+  position: absolute;
+  left: calc(25% + 31px); /* aligned with sub's ink rail; tops set by JS */
+  font-family: 'Geist', sans-serif;
+  font-weight: 500;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 26px;
+  color: #262626;
+  white-space: nowrap;
+}
+
+.hl-1 { top: 261px; }
+.hl-2 { top: 287px; }
+.hl-3 { top: 313px; }
+
+.headline .u, .mf-headline .u {
+  text-decoration: underline;
+  text-decoration-skip-ink: none;
+  text-underline-position: from-font;
+}
+
+/* founder columns — canvas text pools, 80px outer margins, fixed 16px gaps */
+
+#cols {
+  position: absolute;
+  left: 80px;
+  right: 80px;
+  top: 584px;
+  --colw: calc((100% - 3 * 16px) / 4);
+}
+
+.col {
+  position: absolute;
+  top: 0;
+  width: var(--colw);
+}
+
+.col:nth-child(1) { left: 0; }
+.col:nth-child(2) { left: calc(var(--colw) + 16px); }
+.col:nth-child(3) { left: calc((var(--colw) + 16px) * 2); }
+.col:nth-child(4) { left: calc((var(--colw) + 16px) * 3); }
+
+.col canvas {
+  display: block;
+}
+
+/* founder names — real links laid over the canvas, excluded from the pool
+   physics; the copy around them still stirs. Type mirrors the canvas pool
+   (8px Geist Mono, ls 0.8, uppercase, white). Top is baseline-aligned by JS. */
+
+.name-link {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-family: 'Geist Mono', monospace;
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  line-height: normal;
+  color: #fff;
+  text-decoration: none;
+  white-space: pre;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.name-link:hover {
+  text-decoration: underline;
+  text-decoration-skip-ink: none;
+  text-underline-position: from-font;
+}
+
+/* words appear with the master write-on timeline, like the canvas words */
+.name-link span { visibility: hidden; }
+.name-link span.on { visibility: visible; }
+
+/* ---------- showcase (Home 4 overlay) ---------- */
+
+#showcase {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: #000;
+}
+
+#showcase[hidden] { display: none; }
+
+#halftone {
+  position: absolute;
+  inset: 0;
+}
+
+/* header elements never swallow pointer events — hovering anything in the
+   overlay keeps revealing and cycling the image; only the X is clickable */
+#showcase .wordmark,
+#showcase .rmark,
+#showcase .mono-8,
+#showcase .sc-logo {
+  pointer-events: none;
+}
+
+#showcase .wordmark.light,
+#showcase .rmark.light { color: #fff; }
+
+.sc-logo {
+  position: absolute;
+  left: 5.56%;
+  top: 55px;
+  width: 41px;
+  height: 50px;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+#close-showcase {
+  position: absolute;
+  right: 80px; /* right-aligned with Manifesto+/showcase+; top set by JS */
+  top: 241px;
+  width: 55px;
+  height: 55px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+#close-showcase::before,
+#close-showcase::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1.5px;
+  height: 76.26px;
+  background: #fff;
+}
+
+#close-showcase::before { transform: translate(-50%, -50%) rotate(45deg); }
+#close-showcase::after  { transform: translate(-50%, -50%) rotate(-45deg); }
+
+#close-showcase:focus-visible { outline: 1px solid #FFC252; outline-offset: 4px; }
+
+/* ---------- manifesto (Home 6/7 desktop, iPhone 16-6 mobile) ---------- */
+
+#manifesto {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  background: #000;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+#manifesto[hidden] { display: none; }
+
+/* the content scrolls; header elements are fixed and collapse with scroll */
+#mf-content {
+  position: relative;
+  z-index: 1;
+}
+
+#mf-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  background: #000;
+  z-index: 2;
+}
+
+#manifesto > .wordmark,
+#manifesto > .rmark,
+#manifesto > .mono-8,
+#manifesto > .menu-btn,
+.mf-logo {
+  position: fixed;
+  z-index: 3;
+}
+
+.mf-logo {
+  left: 80px;
+  top: 55px;
+  width: 41px;
+  height: 50px;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.mf-headline {
+  position: absolute;
+  font-family: 'Geist', sans-serif;
+  font-weight: 500;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 26px;
+  color: #262626;
+  white-space: nowrap;
+}
+
+#mf-label { position: absolute; left: 80px; white-space: nowrap; }
+
+#mf-body {
+  position: absolute;
+  font-family: 'Geist', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: -0.32px;
+  line-height: 24px;
+  color: #fff;
+}
+
+/* blank line between paragraphs, exactly one line tall like the Figma text */
+#mf-body p + p { margin-top: 24px; }
+
+#mf-top { position: absolute; }
+
+#mf-top a {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+#close-manifesto {
+  position: absolute; /* scrolls with the content, like Home 6 → Home 7 */
+  width: 55px;
+  height: 55px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+#close-manifesto::before,
+#close-manifesto::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1.5px;
+  height: 76.26px;
+  background: #fff;
+}
+
+#close-manifesto::before { transform: translate(-50%, -50%) rotate(45deg); }
+#close-manifesto::after  { transform: translate(-50%, -50%) rotate(-45deg); }
+
+#close-manifesto:focus-visible { outline: 1px solid #FFC252; outline-offset: 4px; }
+
+/* black mask behind the fixed mobile header (mobile only) */
+
+#header-mask {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  background: #000;
+}
+
+/* hamburger (mobile only) — three 15×2 white bars, 5px pitch */
+
+.menu-btn {
+  display: none;
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  width: 15px;
+  height: 12px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+}
+
+.menu-btn span {
+  position: absolute;
+  left: 0;
+  width: 15px;
+  height: 2px;
+  background: #fff;
+}
+
+.menu-btn span:nth-child(1) { top: 0; }
+.menu-btn span:nth-child(2) { top: 5px; }
+.menu-btn span:nth-child(3) { top: 10px; }
+
+/* mobile menu overlay (iPhone 16 - 3) */
+
+#menu {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+#menu[hidden] { display: none; }
+
+.menu-link {
+  position: absolute;
+  left: 20px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 36px;
+  font-weight: 400;
+  letter-spacing: 3.6px;
+  text-transform: uppercase;
+  color: #fff;
+  line-height: normal;
+  white-space: nowrap;
+  text-box: trim-both cap alphabetic;
+}
+
+.menu-link:nth-of-type(1) { top: 20px; }
+.menu-link:nth-of-type(2) { top: 66px; }
+
+.menu-link a { color: inherit; text-decoration: none; cursor: pointer; }
+
+/* the X replaces the hamburger in place: hamburger height (12px) square,
+   same 2px stroke, right edges aligned */
+#close-menu {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  width: 12px;
+  height: 12px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+}
+
+#close-menu::before,
+#close-menu::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 17px;
+  height: 2px;
+  background: #fff;
+}
+
+#close-menu::before { transform: translate(-50%, -50%) rotate(45deg); }
+#close-menu::after  { transform: translate(-50%, -50%) rotate(-45deg); }
+
+/* while the menu is open the hamburger behind it disappears */
+body.menu-open .menu-btn { visibility: hidden; }
+
+/* showcase drag hint (mobile only) */
+
+#sc-hint {
+  display: none;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 53px;
+  top: auto;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* ---------- mobile (iPhone 16 frames) ---------- */
+
+@media (max-width: 600px) {
+  .pos-deployed { display: none; }        /* no Deployed — Globally on mobile */
+  .pos-links { display: none; }           /* replaced by the hamburger menu */
+
+  .pos-latin { white-space: normal; width: 132px; }
+
+
+  .menu-btn { display: block; }
+
+  .sc-logo, .mf-logo { width: 30px; height: 36px; top: 20px; left: 20px; }
+
+  #cols {
+    left: 20px;
+    right: 20px;
+  }
+
+  /* fixed header: the mask paints black over the scrolling content, and the
+     logo, wordmark, latin + cities sit above it */
+  #header-mask { display: block; z-index: 4; }
+  .headline, #cols { z-index: 1; }
+  .pos-sub, .pos-rosa, .pos-r, .pos-latin, .pos-cities, .menu-btn { z-index: 5; }
+  #morph { z-index: 6; }
+
+  /* X centered at the bottom, drag hint right above it */
+  #close-showcase {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 30px;
+  }
+
+  #sc-hint { display: block; bottom: 115px; } /* 30px above the X (bottom 30 + 55 + 30) */
+
+  #halftone { touch-action: none; }
+
+  /* manifesto (iPhone 16 - 6): no headline, 14px body */
+  .mf-headline { display: none; }
+
+  #mf-label { left: 20px; }
+
+  #mf-body {
+    font-size: 14px;
+    letter-spacing: -0.28px;
+    line-height: 20px;
+  }
+
+  #mf-body p + p { margin-top: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #flipper { transition: none; }
+}
