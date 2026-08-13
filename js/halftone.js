@@ -4,6 +4,9 @@
 // revealRadius 0.6, edge 0.9, follow 0.1, ink #1A1A1A on black paper.
 // Extra behaviour: the textured image swaps to a random other one after every
 // ~180px of cursor travel, so moving around the page flips through the set.
+// Alternatively `opts.video` takes a single video URL: the reel loops muted in
+// the background and the lens reveals it — no cycling, every frame re-uploads
+// to the texture.
 
 const VERTEX = `#version 300 es
 in vec2 position;
@@ -187,18 +190,36 @@ export class HalftoneReveal {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]))
     gl.uniform2f(this.u.uImageSize, 1, 1)
 
+    // single video reel: loops muted behind the halftone, revealed by the
+    // lens; replaces the image deck entirely (no cycling)
+    this.video = null
+    this.videoSize = 0
+    if (opts.video) {
+      const v = document.createElement('video')
+      v.muted = true
+      v.loop = true
+      v.playsInline = true
+      v.setAttribute('playsinline', '')
+      v.preload = 'auto'
+      v.src = opts.video
+      v.load()
+      this.video = v
+    }
+
     // preload all images; show a random one first
-    this.images = sources.map(src => {
+    this.images = (this.video ? [] : sources).map(src => {
       const img = new Image()
       img.src = src
       return img
     })
     this.current = -1
-    const first = Math.floor(Math.random() * this.images.length)
-    const firstImg = this.images[first]
-    if (firstImg.complete) this.setImage(first)
-    else firstImg.onload = () => { if (this.current === -1) this.setImage(first) }
-    this.images.forEach(img => { if (!img.complete) img.addEventListener('error', () => {}) })
+    if (this.images.length) {
+      const first = Math.floor(Math.random() * this.images.length)
+      const firstImg = this.images[first]
+      if (firstImg.complete) this.setImage(first)
+      else firstImg.onload = () => { if (this.current === -1) this.setImage(first) }
+      this.images.forEach(img => { if (!img.complete) img.addEventListener('error', () => {}) })
+    }
 
     this.onMove = e => {
       const rect = container.getBoundingClientRect()
@@ -261,6 +282,7 @@ export class HalftoneReveal {
 
   start() {
     if (this.raf) return
+    if (this.video) this.video.play().catch(() => {})
     this.prev = performance.now()
     const loop = now => {
       this.raf = requestAnimationFrame(loop)
@@ -272,12 +294,26 @@ export class HalftoneReveal {
       m.sy += (m.y - m.sy) * a
       const ba = 1 - Math.exp(-dt / 0.18)
       m.active += (m.target - m.active) * ba
-      // while the pointer moves, keep cycling images in random order
-      if (now - this.lastMove < MOVE_WINDOW && now - this.lastSwap > SWAP_INTERVAL) {
+      const gl = this.gl
+      if (this.video) {
+        // upload the current reel frame every tick
+        const v = this.video
+        if (v.readyState >= 2 && v.videoWidth) {
+          gl.bindTexture(gl.TEXTURE_2D, this.texture)
+          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v)
+          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false)
+          const size = v.videoWidth * 32768 + v.videoHeight
+          if (size !== this.videoSize) {
+            this.videoSize = size
+            gl.uniform2f(this.u.uImageSize, v.videoWidth, v.videoHeight)
+          }
+        }
+      } else if (now - this.lastMove < MOVE_WINDOW && now - this.lastSwap > SWAP_INTERVAL) {
+        // while the pointer moves, keep cycling images in random order
         this.lastSwap = now
         this.swapRandom()
       }
-      const gl = this.gl
       gl.uniform2f(this.u.uMouse, m.sx, m.sy)
       gl.uniform1f(this.u.uActivity, m.active)
       gl.clear(gl.COLOR_BUFFER_BIT)
@@ -289,5 +325,6 @@ export class HalftoneReveal {
   stop() {
     if (this.raf) cancelAnimationFrame(this.raf)
     this.raf = null
+    if (this.video) this.video.pause()
   }
 }

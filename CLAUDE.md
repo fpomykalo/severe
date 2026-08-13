@@ -59,30 +59,51 @@ assets/             rose SVGs, Geist woff2 (self-hosted), showcase images in
   collapsed 16-5) over the first 200px of scroll via
   `applyMobileHeader(c, scope)`; showcase mirrors the current collapse state
   in white.
-- **v2 manifesto (Home 6/7, iPhone 16-6):** `Manifesto+` (or the mobile menu)
-  opens `#manifesto` — a fixed, self-scrolling overlay (z15, under showcase
-  z20/menu z40) with fixed header elements and a black #mf-mask. Desktop: the
-  header collapses over the first 200px of overlay scroll into a one-line
-  "sub rosa" (cap height 62 at top 43, rosa box offset 458·s2, nav row rises
-  navTop→125); content = gray headline (as Home 2), mono label
-  "the manifesto / last updated:…" at x80, white 55px X at vw-80 (scrolls
-  with content), body Geist 400 16/24 ls-0.32 white, width = two columns +
-  gutter (632 at 1440) on the filip rail, all starting 104px under the
-  headline (y434 at 1440); "top of the page ↑" 70px under the body (smooth
-  scrolls back up), 104px bottom padding. Mobile: header always collapsed
-  (16-5 state); label 39px under the latin block, X right edge vw-20
-  centered on the label, body 14/20 ls-0.28 70px under the label, no
-  headline. Esc priority: showcase → menu → manifesto.
+- **v2 manifesto (Home 6/7, iPhone 16-6 + user revisions):** `Manifesto+` (or
+  the mobile menu) opens `#manifesto` — a fixed, self-scrolling overlay (z15,
+  under showcase z20/menu z40) with fixed header elements and a black
+  #mf-mask. Desktop: the header collapses over the first 200px of overlay
+  scroll into a one-line "sub rosa" (cap height 62 at top 43, rosa box
+  offset 458·s2, nav row rises navTop→125); content = gray headline (as
+  Home 2), body Geist 400 16/24 ls-0.32 white, width = two columns + gutter
+  (632 at 1440) on the filip rail, starting 104px under the headline (y434
+  at 1440); "top of the page ↑" 70px under the body (smooth scrolls back
+  up), 104px bottom padding. The mono label "the manifesto / last
+  updated:…" (x80) and the white 55px X (right edge vw-80) are FIXED
+  (z3, above the mask): they ride up with the content until 50px under the
+  header block (navTop+latinH+50), then lock there while the body scrolls
+  under the mask — user-specified sticky behavior overriding Home 6's
+  scrolling X. Mobile: same collapse mechanic as the homepage (opens
+  EXPANDED 16-2 state, collapses over 200px of overlay scroll — overrides
+  16-6's always-collapsed frame per user note); label pinned
+  navTop(c)+26+50, X right edge vw-20 centered on the label
+  (top=label−19), body 14/20 ls-0.28 at label+16+70; mobile mask extends to
+  labelTop+56 (past the pinned X) because the body is full-width. Esc
+  priority: showcase → menu → manifesto. X is fixed, so it closes from any
+  scroll depth.
 - **v2 founder names are DOM links** (`.name-link`, textpool2 `staticWords`):
   the first name+surname words are skipped by the canvas draw/physics and
-  rendered as real `<a>`s over the pool (8px Geist Mono uppercase white,
-  cap-trimmed, top = baseline − measured cap height — pixel-verified level
-  with the canvas words on the same line). Hover underlines; each word
-  reveals with the master timeline like canvas words (`syncNameLinks`).
-  LinkedIn URLs in COLUMNS are placeholder slugs until the user provides
-  real ones. v2 has NO rose cursor — default cursor; body copy still stirs
-  (textpool listens on its own canvas; #cols pointermove just wakes the
-  pool loop).
+  rendered as real `<a>`s over the pool (8px Geist Mono uppercase white).
+  Baseline alignment is measured at runtime with a zero-size inline-block
+  marker probe (marker top − probe top = DOM baseline offset; link top =
+  canvas hy − offset) — browser/zoom/DPR-independent, no text-box
+  dependency. Hover underlines; each word reveals with the master timeline
+  like canvas words (`syncNameLinks`). Real LinkedIn URLs (user-provided):
+  kkitev, filip-pomykalo, zivanrosic, noahjoelsmith. v2 has NO rose cursor —
+  default cursor; body copy still stirs (textpool listens on its own canvas;
+  #cols pointermove just wakes the pool loop).
+- **v2 column copy (short version, Aug 2026 Figma):** each column = name +
+  TWO paragraphs from P_LONG ("Brand is infrastructure…Nokia.") and P_BIO
+  ("Brand designer…left the room."). kito/zivan: [P_LONG, P_BIO_CUT] where
+  P_BIO_CUT ends mid-sentence at "…once he." (verbatim in Figma — don't
+  "fix" it); Filip/noah: [P_BIO, P_LONG]. Figma capitalizes "Filip
+  Pomykalo"; pool renders uppercase regardless.
+- **Showcase video reel (prepared, awaiting asset):** halftone.js accepts
+  `opts.video` (single URL) — a muted looping `<video>` uploads every frame
+  to the GL texture, lens/dots identical, no cycling; images path untouched
+  (v1 unaffected). main2.js `SHOWCASE_VIDEO` is null until the user
+  delivers the reel — set it to the asset path (and add the file to the
+  repo) to switch the showcase from stills to the reel.
 - **Ink metrics are pixel-calibrated constants** (`rosaInkOffset=16`,
   `subInkOffset=9`, `rosaInkW=464` at 240px): canvas measureText cannot see
   the ss01/ss04 alternate glyphs, so don't "fix" these back to measured

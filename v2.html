@@ -109,13 +109,6 @@
   <div id="mf-content">
     <p class="mf-headline">The creative leads who built <br>tech’s most controversial brand. <br><span class="u">Get in touch</span> — we'll have a look.</p>
 
-    <div id="mf-label" class="mono-8">
-      <p>the manifesto</p>
-      <p>last updated: July 17, 2026</p>
-    </div>
-
-    <button id="close-manifesto" aria-label="Close manifesto"></button>
-
     <div id="mf-body">
       <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
       <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?</p>
@@ -133,6 +126,14 @@
   </div>
 
   <div id="mf-mask" aria-hidden="true"></div>
+
+  <!-- fixed layer: the label and X ride up with the content, then lock 50px
+       under the header while the body keeps scrolling under the mask -->
+  <div id="mf-label" class="mono-8">
+    <p>the manifesto</p>
+    <p>last updated: July 17, 2026</p>
+  </div>
+  <button id="close-manifesto" aria-label="Close manifesto"></button>
 
   <img class="mf-logo" src="assets/rose-logo2.svg" alt="" draggable="false">
   <p class="wordmark pos-sub">sub</p>

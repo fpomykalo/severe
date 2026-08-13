@@ -7,19 +7,24 @@ import { HalftoneReveal } from './halftone.js'
 
 /* ---------------------------------------------------------------- content */
 
-const P1 = `Most identity work survives its launch and falls apart around month six, when the original designer is gone and a product manager is building a deck at eleven at night. Filip designs for that person. A system has to be rigorous enough to stay coherent across a thousand touchpoints and loose enough that someone who has never opened a guidelines document can use it without breaking anything. Brand is infrastructure. It should carry weight quietly and give the people inside a company something to build with. Guidelines are only a record of it. The real test is whether the logic underneath is clear enough for people to make good decisions on their own.`
-const P2 = `That way of thinking came from working in-house. As Global Creative Lead at Palantir he built the brand across every platform, AIP, Foundry, Gotham and Apollo, and handed it to more than four thousand colleagues who used it every day. At FluidStack he led brand design through a period of fast growth. Earlier years were spent at Pentagram, Wieden+Kennedy, Landor, Mother London and Further, on work for Coca-Cola, Nike, Johnnie Walker and Nokia.`
-const P3 = `brand designer and creative director based in London, working with technology companies, startups and the investors who back them. Sixteen years in, he measures a brand by one thing: how well it holds up once he has left the room.`
+const P_LONG = `Brand is infrastructure, and it only works if the person who has never opened the guidelines can still use it without breaking anything. That way of thinking came from working in-house. As Global Creative Lead at Palantir he built the brand across every platform, AIP, Foundry, Gotham and Apollo, and handed it to more than four thousand colleagues who used it every day. At FluidStack he led brand design through a period of fast growth. Earlier years were spent at Pentagram, Wieden+Kennedy, Landor, Mother London and Further, on work for Coca-Cola, Nike, Johnnie Walker and Nokia.`
+const P_BIO = `Brand designer and creative director based in London, working with technology companies, startups and the investors who back them. Sixteen years in, he measures a brand by one thing: how well it holds up once he has left the room.`
+// kito's and zivan's copies of the bio end mid-sentence in Figma — verbatim
+const P_BIO_CUT = P_BIO.slice(0, -' has left the room.'.length) + '.'
 
 const GAP = ' '.repeat(10)
 
-// LinkedIn slugs are placeholders — swap for the real profile URLs
 const COLUMNS = [
-  { id: 'col-0', name: 'kito kitev',     paras: [P1, P2, P3], url: 'https://www.linkedin.com/in/kito-kitev/' },
-  { id: 'col-1', name: 'filip pomykalo', paras: [P3, P1, P2], url: 'https://www.linkedin.com/in/filip-pomykalo/' },
-  { id: 'col-2', name: 'zivan rosic',    paras: [P2, P3, P1], url: 'https://www.linkedin.com/in/zivan-rosic/' },
-  { id: 'col-3', name: 'noah smith',     paras: [P1, P2, P3], url: 'https://www.linkedin.com/in/noah-smith/' },
+  { id: 'col-0', name: 'kito kitev',     paras: [P_LONG, P_BIO_CUT], url: 'https://www.linkedin.com/in/kkitev/' },
+  { id: 'col-1', name: 'Filip Pomykalo', paras: [P_BIO, P_LONG],     url: 'https://www.linkedin.com/in/filip-pomykalo/' },
+  { id: 'col-2', name: 'zivan rosic',    paras: [P_LONG, P_BIO_CUT], url: 'https://www.linkedin.com/in/zivanrosic/' },
+  { id: 'col-3', name: 'noah smith',     paras: [P_BIO, P_LONG],     url: 'https://www.linkedin.com/in/noahjoelsmith/' },
 ]
+
+// Showcase reel: set to the video URL (e.g. 'assets/reel.mp4') once the
+// asset lands — the halftone lens then reveals the single looping reel
+// instead of cycling the stills (same effect, no randomization)
+const SHOWCASE_VIDEO = null
 
 const SHOWCASE_IMAGES = [
   'AIPCon2.jpg',
@@ -306,23 +311,30 @@ function buildNameLinks() {
   positionNameLinks()
 }
 
-// baseline-align the DOM name with the canvas words on the same line: the
-// link is cap-trimmed (text-box), so its top is the cap top of the first
-// pool line (baseline hy minus the 8px font's cap height)
+// baseline-align the DOM name with the canvas words on the same line. The
+// canvas draws at an alphabetic baseline of hy; measure where the DOM puts
+// the baseline inside a .name-link-styled box (a zero-size inline-block
+// marker sits exactly on the text baseline) and offset the link's top so the
+// two coincide — works at every viewport, zoom and DPR, in every browser,
+// with no dependency on text-box support
 function positionNameLinks() {
-  const probe = document.createElement('span')
-  probe.style.cssText = 'position:absolute;visibility:hidden;display:inline-block;' +
-    'font:400 8px "Geist Mono",monospace;letter-spacing:0.8px;text-box:trim-both cap alphabetic;'
-  probe.textContent = 'K'
+  const probe = document.createElement('div')
+  probe.style.cssText = 'position:absolute;visibility:hidden;left:-9999px;top:0;' +
+    'font:400 8px "Geist Mono",monospace;letter-spacing:0.8px;line-height:normal;' +
+    'text-transform:uppercase;white-space:pre;'
+  probe.textContent = 'KITO'
+  const marker = document.createElement('span')
+  marker.style.cssText = 'display:inline-block;width:0;height:0;'
+  probe.appendChild(marker)
   document.body.appendChild(probe)
-  const capH = probe.getBoundingClientRect().height || 5.8
+  const baseline = marker.getBoundingClientRect().top - probe.getBoundingClientRect().top
   probe.remove()
 
   nameLinks.forEach((a, i) => {
     const w0 = pools[i] && pools[i].words[0]
     if (!w0) return
     a.style.left = w0.hx + 'px'
-    a.style.top = (w0.hy - capH) + 'px'
+    a.style.top = (w0.hy - baseline) + 'px'
   })
 }
 
@@ -435,7 +447,7 @@ function fitTitle() {
     applyMobileHeader(headerCollapse, '#scene2')
     // the showcase and manifesto overlays mirror the header in their state
     applyMobileHeader(headerCollapse, '#showcase')
-    applyMobileHeader(1, '#manifesto') // manifesto is always collapsed (16-6)
+    applyMobileHeader(mfC, '#manifesto') // manifesto collapses with its own scroll
 
     const headTop = navTop1 + 26 + 40  // latin block is 3 lines on mobile
     ;[['hl-1', 0], ['hl-2', 26], ['hl-3', 52]].forEach(([cls, off]) => {
@@ -534,6 +546,7 @@ function openShowcase() {
       inkColor: '#1A1A1A',
       paperColor: '#000000',
       eventTarget: showcaseEl,
+      video: SHOWCASE_VIDEO,
     })
   }
   fitTitle()
@@ -555,13 +568,29 @@ function closeShowcase() {
    to 125. On mobile (iPhone 16 - 6) the header is always collapsed. */
 
 const manifestoEl = document.getElementById('manifesto')
-let mfC = 0 // manifesto header collapse 0..1 (desktop)
+let mfC = 0        // manifesto header collapse 0..1
+let mfLabelTop0 = 0 // natural (scroll-0) top of the manifesto label block
 
+// The label and X live in the fixed layer: they scroll up with the content
+// until they sit 50px under the header block (wordmark + nav row), then lock
+// there while the body copy keeps scrolling under the black mask.
 function applyManifestoHeader(c) {
+  const st = manifestoEl.scrollTop
+  const label = document.getElementById('mf-label')
+  const closeBtn = document.getElementById('close-manifesto')
+  const mask = document.getElementById('mf-mask')
+
   if (isMobile()) {
-    applyMobileHeader(1, '#manifesto')
     const m = mobileHeader
-    if (m) document.getElementById('mf-mask').style.height = (m.navTop2 + 26 + 20) + 'px'
+    if (!m) return
+    applyMobileHeader(c, '#manifesto')
+    const navTop = Math.round(m.navTop1 + (m.navTop2 - m.navTop1) * c)
+    const labelTop = Math.round(Math.max(mfLabelTop0 - st, navTop + 26 + 50))
+    label.style.top = labelTop + 'px'
+    closeBtn.style.top = (labelTop - 19) + 'px'
+    // the body is full-width here, so the mask extends past the pinned
+    // label + X before the copy re-emerges
+    mask.style.height = (labelTop + 36 + 20) + 'px'
     return
   }
   const d = deskHeader
@@ -585,6 +614,10 @@ function applyManifestoHeader(c) {
   q('.pos-latin').forEach(el => { el.style.left = d.rail2 + 'px' })
   q('.pos-cities').forEach(el => { el.style.left = Math.round(d.citiesLeft) + 'px' })
 
+  const labelTop = Math.round(Math.max(mfLabelTop0 - st, navTop + latinNaturalH + 50))
+  label.style.top = labelTop + 'px'
+  closeBtn.style.top = labelTop + 'px'
+
   document.getElementById('mf-mask').style.height = (navTop + latinNaturalH + 20) + 'px'
 }
 
@@ -599,21 +632,21 @@ function fitManifesto() {
   if (isMobile()) {
     const m = mobileHeader
     if (!m) return
-    // iPhone 16 - 6: label 39px under the latin block, X right-aligned at
-    // vw-20 and centered on the label, body 70px under the label
-    const labelTop = m.navTop2 + 26 + 39
-    label.style.top = labelTop + 'px'
+    // same mechanic as the homepage: the header opens expanded (16-2) and
+    // collapses over the first 200px of scroll; the label sits 50px under
+    // it, the X right-aligned at vw-20 centered on the label, the body 70px
+    // under the label
+    mfLabelTop0 = m.navTop1 + 26 + 50
     closeBtn.style.left = (vw - 75) + 'px'
-    closeBtn.style.top = (labelTop - 19) + 'px'
     body.style.left = '20px'
-    body.style.top = (labelTop + 16 + 70) + 'px'
+    body.style.top = (mfLabelTop0 + 16 + 70) + 'px'
     body.style.width = (vw - 40) + 'px'
     const h = body.offsetHeight
-    const topTop = labelTop + 16 + 70 + h + 70
+    const topTop = mfLabelTop0 + 16 + 70 + h + 70
     topLink.style.left = '20px'
     topLink.style.top = topTop + 'px'
     content.style.height = (topTop + 6 + 104) + 'px'
-    applyManifestoHeader(1)
+    applyManifestoHeader(mfC)
     return
   }
 
@@ -628,9 +661,8 @@ function fitManifesto() {
   mfHeadline.style.top = headTop + 'px'
 
   const mTop = headTop + 69 + 104
-  label.style.top = mTop + 'px'
+  mfLabelTop0 = mTop
   closeBtn.style.left = (vw - 80 - 55) + 'px'
-  closeBtn.style.top = mTop + 'px'
   body.style.left = d.rail2 + 'px'
   body.style.top = mTop + 'px'
   body.style.width = (2 * d.rail2 - 176) + 'px' // two columns + one gutter
@@ -782,10 +814,8 @@ async function init() {
     manifestoEl.scrollTo({ top: 0, behavior: 'smooth' })
   })
   manifestoEl.addEventListener('scroll', () => {
-    if (!isMobile()) {
-      mfC = Math.min(1, manifestoEl.scrollTop / 200)
-      applyManifestoHeader(mfC)
-    }
+    mfC = Math.min(1, manifestoEl.scrollTop / 200)
+    applyManifestoHeader(mfC)
   }, { passive: true })
 
   // mobile menu

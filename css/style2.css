@@ -396,7 +396,14 @@ body {
   white-space: nowrap;
 }
 
-#mf-label { position: absolute; left: 80px; white-space: nowrap; }
+/* the label and X are fixed (JS pins them 50px under the header once the
+   content has scrolled that far) and sit above the mask */
+#mf-label {
+  position: fixed;
+  left: 80px;
+  white-space: nowrap;
+  z-index: 3;
+}
 
 #mf-body {
   position: absolute;
@@ -420,13 +427,13 @@ body {
 }
 
 #close-manifesto {
-  position: absolute; /* scrolls with the content, like Home 6 → Home 7 */
+  position: fixed;
   width: 55px;
   height: 55px;
   background: none;
   border: 0;
   cursor: pointer;
-  z-index: 2;
+  z-index: 3;
 }
 
 #close-manifesto::before,
