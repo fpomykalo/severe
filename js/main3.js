@@ -104,13 +104,20 @@ function tickClock() {
 }
 setInterval(tickClock, 250);
 
-/* second clock column starts where it does in Figma: after "22:04.37" + 20 spaces */
+/* second clock column starts where it does in Figma: after "22:04.37" + 20 spaces
+   (measured at 12px for desktop, 10px for mobile) */
 document.fonts.ready.then(() => {
   const ctx = document.createElement('canvas').getContext('2d');
+  const PRE = '22:04.37                    ';
+  ctx.font = '500 12px HaasDisp';
+  document.documentElement.style.setProperty('--clock2', ctx.measureText(PRE).width + 'px');
   ctx.font = '500 10px HaasDisp';
-  const w = ctx.measureText('22:04.37                    ').width;
-  document.documentElement.style.setProperty('--clock2', w + 'px');
+  document.documentElement.style.setProperty('--clock2-m', ctx.measureText(PRE).width + 'px');
 });
+
+/* the image pool stays background-only: no context menu, no drag-out */
+document.addEventListener('contextmenu', (e) => e.preventDefault());
+document.addEventListener('dragstart', (e) => { if (e.target.closest('img, #bg')) e.preventDefault(); });
 
 /* ---------- intro reveal: hero letters + cities + clock ---------- */
 

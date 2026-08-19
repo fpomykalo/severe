@@ -57,7 +57,14 @@ a { color: inherit; text-decoration: none; }
   height: 100%;
   object-fit: cover;
   transition: filter .25s ease, transform .25s ease;
+  /* keep the image "in the background": no right-click target, no long-press
+     save sheet, no drag-out (context menu is also blocked in JS) */
+  pointer-events: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  user-select: none;
 }
+img { -webkit-touch-callout: none; -webkit-user-drag: none; }
 /* Figma layer blur 15 = CSS blur radius 7.5px; slight scale hides blurred edge bleed */
 body.overlay #bg-img { filter: blur(7.5px); transform: scale(1.03); }
 
@@ -78,15 +85,20 @@ body.overlay #dim { opacity: 1; }
   position: fixed;
   left: var(--m);
   z-index: 50;
-  font-size: 10px;
+  font-size: 12px;                  /* desktop: same size/rhythm as the overlay text */
   white-space: pre;
   text-box: trim-both cap alphabetic;
   visibility: hidden;               /* until JS has taken over (no first-paint flash) */
 }
 body.boot #cities, body.boot #clock { visibility: visible; }
 #cities { top: var(--m); }
-#clock  { top: calc(var(--m) + 12px); color: rgba(255, 0, 0, 0.3); }
-#clock-r { position: absolute; left: var(--clock2, 72px); top: 0; }
+#clock  { top: calc(var(--m) + 14px); color: rgba(255, 0, 0, 0.3); }
+#clock-r {
+  position: absolute;
+  left: var(--clock2, 87px);
+  top: 0;
+  text-box: trim-both cap alphabetic;   /* cap-align with the London time */
+}
 
 /* ---------- header wordmark ---------- */
 
@@ -253,7 +265,6 @@ body[data-tab="inquire"]   .col-inquire   .col-label .arr { display: inline-bloc
   white-space: pre;
   text-box: trim-both cap alphabetic;
 }
-.ttl-m { display: none; }   /* K. Kitev title: hard break on desktop, one line on mobile */
 
 .p-link {
   position: relative;
@@ -373,6 +384,10 @@ body[data-state="morph"] #intro-arrow { opacity: 0; }
 @media (max-width: 700px) {
   :root { --m: 16px; }
 
+  #cities, #clock { font-size: 10px; }
+  #clock { top: calc(var(--m) + 12px); color: var(--red); }   /* hours full opacity on mobile */
+  #clock-r { left: var(--clock2-m, 72px); }
+
   #wordmark { left: 16px; top: 67px; }
 
   /* main state: big stacked nav */
@@ -431,9 +446,6 @@ body[data-state="morph"] #intro-arrow { opacity: 0; }
     margin-top: 10px;
   }
   #email .ext-arr { left: 112px; }
-
-  .ttl-d { display: none; }
-  .ttl-m { display: inline; }
 
   #p-rows { position: static; padding-bottom: 16px; }
   .col-personnel .p-row:first-child { border-top: none; }

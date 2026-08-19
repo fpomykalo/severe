@@ -35,14 +35,19 @@ assets/v3/svg/     tm.svg (7×3), x.svg (26×26), x-m.svg (47×47),
 ## Design rules (Figma-exact, don't drift)
 
 - **Color:** `#FF0000` on `#000`. Inactive overlay columns opacity 0.3,
-  inactive bottom nav 0.2, clock line 0.3. All copy uses typographer's
+  inactive bottom nav 0.2, clock line 0.3 on desktop but FULL red on mobile
+  (user note). All copy uses typographer's
   apostrophes (’ never ').
 - **Grid (desktop 1440):** 6 columns, 20px margins, 16px gutters →
   `--cw:(100vw-120px)/6` (220). Rails: wordmark `25vw+8` (368), manifesto
   `50vw+8` (728), personnel `66.667vw+4` (964), inquire `83.333vw` (1200).
   Personnel sub-column: rail + `(cw+16)/2` (1082). Nav baselines 20px above
   bottom; X 26×26 at right/bottom 20.
-- **Type:** 'HaasDisp' (500 = 65 Medium, 700 = 75 Bold). Cities/clock 10px.
+- **Type:** 'HaasDisp' (500 = 65 Medium, 700 = 75 Bold). Cities/clock:
+  12px on desktop (user note: match the overlay text; cities top 20, clock
+  top 34 = +14 line pitch), 10px on mobile (16/28). #clock-r needs its own
+  text-box trim (abs-positioned spans don't inherit the trim) or the second
+  clock sits ~1px lower.
   Overlay text 12px with **line-height 14px** (Figma uses explicit 14, not
   the 14.4 the font's normal would give). Nav + wordmark 36px (no tracking).
   Hero 363px, tracking −3.63px, first-E span +0.16px. All text cap-aligned
@@ -70,6 +75,9 @@ assets/v3/svg/     tm.svg (7×3), x.svg (26×26), x-m.svg (47×47),
   the 36px wordmark; ™ lerps separately to its 7×3 box at +141), while the
   three nav items write themselves out with the same scramble. States:
   body[data-state=intro→morph→main]; at main the real #wordmark swaps in.
+- **Image protection (user request):** context menu blocked document-wide,
+  #bg-img pointer-events:none + no touch-callout/user-drag, dragstart
+  blocked — best-effort only (network tab still exposes files; user knows).
 - **Home 2/3:** pointer movement cycles the fullscreen pool (swap per
   140ms of movement, object-fit cover, no effects). Images are decoded
   ahead (`img.decode()`, decoding=async, next-2 prefetch) — never swap
