@@ -54,7 +54,9 @@ assets/v3/svg/     tm.svg (7×3), x.svg (26×26), x-m.svg (47×47),
 - **Home 1 (intro):** hero is #hero-lockup in design units (S ink at 0,0,
   cap box 1416×260; word at −6px, ™ at 1389.04/0.55 w26.96), positioned by
   a JS transform: desktop `translate(11k,63k) scale(k)` (k=vw/1440), mobile
-  rotated −90° scaled 0.51554 centered at (50%+0.42, 50%−2). Cities 20/20
+  rotated −90° scaled 0.464 (Figma's 0.51554 −10% per user note), centered
+  on the word alone — the ™ is hidden on the mobile intro (display:none)
+  and only appears with the header wordmark after the morph. Cities 20/20
   + clock 20/32 (mobile 16/16, 16/28), live London + Detroit HH:MM.SS,
   second clock offset measured from "22:04.37"+20 spaces. ↓ arrow 12×20
   centered, 20 (16 mobile) from bottom.
@@ -82,7 +84,8 @@ assets/v3/svg/     tm.svg (7×3), x.svg (26×26), x-m.svg (47×47),
   column text/X/nav) closes; clicking any column's content activates that
   column's tab; switching tabs collapses any open personnel row; Esc
   closes. ALL links underline on hover (nav items, top labels, names,
-  LinkedIn, email).
+  LinkedIn, email) — but hover rules are disabled under `(hover: none)` so
+  taps on touch devices never leave a stuck underline.
 - **Personnel column:** rows are content-driven (no fixed pitch): name cap
   +5 from stroke; right sub-column title (K. Kitev's "Director
   of/Operations" is a hard 2-line break on desktop, one line on mobile —
@@ -101,7 +104,8 @@ assets/v3/svg/     tm.svg (7×3), x.svg (26×26), x-m.svg (47×47),
   rule (col is the scroll container, border-top = the rule, first p-row
   drops its border). Rows: text +10 under lines, sub-column at left
   +193.63, gaps 5/20 as desktop. Manifesto body +15 under rule; email +10,
-  ↗ 8×8 at +112. Note: Figma iPhone-10/11 have inconsistent F.P./Ž.R. row
+  ↗ 8×8 at +112. Intro arrow bottom 6 (user note: 10px lower than Figma's
+  16). Note: Figma iPhone-10/11 have inconsistent F.P./Ž.R. row
   gaps (7/20 vs the 20 rule) — implemented with the uniform rule instead;
   flagged to the user.
 - **Manifesto column:** Figma copy, 5 paragraphs, blank line between
