@@ -1,0 +1,314 @@
+/* SEVERE v3 — built 1:1 from Figma "SEVERE™ — Web", frames Home 1–5 (desktop).
+   Grid: 6 columns, 20px viewport margins, 16px gutters (column = 220px @1440).
+   All red is #FF0000; inactive dropdown columns 30%, inactive bottom nav 20%. */
+
+@font-face {
+  font-family: 'HaasDisp';
+  src: url('../assets/v3/fonts/HaasGrotDisp-65Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: block;
+}
+@font-face {
+  font-family: 'HaasDisp';
+  src: url('../assets/v3/fonts/HaasGrotDisp-75Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: block;
+}
+
+:root {
+  --red: #FF0000;
+  --cw: calc((100vw - 120px) / 6);            /* 220 @1440 */
+  --r3: calc(50vw + 8px);                     /* 728 @1440 */
+  --r4: calc(66.66667vw + 4px);               /* 964 @1440 */
+  --r5: calc(83.33333vw);                     /* 1200 @1440 */
+  --subrel: calc(var(--cw) / 2 + 8px);        /* right sub-column offset inside a column: 118 @1440 */
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: #000;
+  color: var(--red);
+  font-family: 'HaasDisp', Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--red); color: #000; }
+
+a { color: inherit; text-decoration: none; }
+
+body[data-state="main"] { overflow: hidden; }
+
+#scroll-spacer { height: 200vh; }
+body[data-state="main"] #scroll-spacer { height: 0; }
+
+/* ---------- fullscreen image + overlay dim (Home 3 / 4) ---------- */
+
+#bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: #000;
+}
+#bg-img {
+  display: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: filter .25s ease, transform .25s ease;
+}
+/* Figma layer blur 20 = CSS blur radius 10px; slight scale hides blurred edge bleed */
+body.overlay #bg-img { filter: blur(10px); transform: scale(1.03); }
+
+#dim {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease;
+}
+body.overlay #dim { opacity: 1; }
+
+/* ---------- persistent top-left: cities + clocks ---------- */
+
+#cities, #clock {
+  position: fixed;
+  left: 20px;
+  z-index: 50;
+  font-size: 10px;
+  white-space: pre;
+  text-box: trim-both cap alphabetic;
+}
+#cities { top: 20px; }
+#clock  { top: 32px; color: rgba(255, 0, 0, 0.3); }
+#clock-r { position: absolute; left: var(--clock2, 72px); top: 0; }
+
+/* ---------- header wordmark (Home 2+) ---------- */
+
+#wordmark {
+  position: fixed;
+  left: calc(25vw + 8px);
+  top: 20px;
+  z-index: 30;
+  font-size: 36px;
+  font-weight: 700;
+  white-space: pre;
+  text-box: trim-both cap alphabetic;
+}
+#wordmark-tm {
+  position: absolute;
+  left: 141px;
+  top: 0;
+  width: 7px;
+  height: 3px;
+}
+
+/* ---------- bottom navigation (Home 2+) ---------- */
+
+.navitem {
+  position: fixed;
+  bottom: 20px;
+  z-index: 20;
+  font-size: 36px;
+  white-space: pre;
+  cursor: pointer;
+  text-box: trim-both cap alphabetic;
+  transition: opacity .15s ease;
+}
+#nav-manifesto { left: var(--r3); }
+#nav-personnel { left: var(--r4); }
+#nav-inquire   { left: var(--r5); }
+
+body.overlay .navitem { opacity: 0.2; }
+body[data-tab="manifesto"] #nav-manifesto { opacity: 1; }
+body[data-tab="personnel"] #nav-personnel { opacity: 1; }
+body[data-tab="inquire"]   #nav-inquire   { opacity: 1; }
+
+/* ---------- overlay dropdowns (Home 4 / 5) ---------- */
+
+#overlay { display: none; position: fixed; inset: 0; z-index: 10; }
+body.overlay #overlay { display: block; }
+
+.col {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: var(--cw);
+  font-size: 10px;
+  opacity: 0.3;
+  transition: opacity .15s ease;
+}
+.col-manifesto { left: var(--r3); }
+.col-personnel { left: var(--r4); }
+.col-inquire   { left: var(--r5); }
+body[data-tab="manifesto"] .col-manifesto { opacity: 1; }
+body[data-tab="personnel"] .col-personnel { opacity: 1; }
+body[data-tab="inquire"]   .col-inquire   { opacity: 1; }
+
+.col-label {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  white-space: pre;
+  cursor: pointer;
+  text-box: trim-both cap alphabetic;
+}
+.col-manifesto .col-label { left: 2px; }
+
+/* "+" when closed, ↓ arrow when this tab is active */
+.arr { display: none; width: 4px; height: 7px; margin-left: 2px; vertical-align: baseline; }
+body[data-tab="manifesto"] .col-manifesto .col-label .plus,
+body[data-tab="personnel"] .col-personnel .col-label .plus,
+body[data-tab="inquire"]   .col-inquire   .col-label .plus { display: none; }
+body[data-tab="manifesto"] .col-manifesto .col-label .arr,
+body[data-tab="personnel"] .col-personnel .col-label .arr,
+body[data-tab="inquire"]   .col-inquire   .col-label .arr { display: inline-block; }
+
+.col-rule {
+  position: absolute;
+  top: 41px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--red);
+}
+
+.col-body {
+  position: absolute;
+  top: 41px;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--red);
+  padding-top: 5px;
+  line-height: normal;
+  white-space: pre-wrap;
+  text-box: trim-both cap alphabetic;
+}
+
+/* external links: text + 5x5 arrow riding the cap line */
+.ext { position: relative; white-space: pre; }
+.ext img { position: absolute; top: 0; width: 5px; height: 5px; }
+
+#email {
+  position: absolute;
+  top: 47px;
+  left: 0;
+  text-box: trim-both cap alphabetic;
+}
+#email:hover { text-decoration: underline; }
+#email img { left: 81px; }
+
+/* ---------- personnel rows ---------- */
+
+#p-rows { position: absolute; top: 41px; left: 0; right: 0; }
+
+.p-row { border-top: 1px solid var(--red); }
+
+.p-head { position: relative; height: 38px; cursor: pointer; }
+
+.p-name {
+  position: absolute;
+  left: 0;
+  top: 5px;
+  white-space: pre;
+  text-box: trim-both cap alphabetic;
+}
+.p-row.open .p-name .plus { display: none; }
+.p-row.open .p-name .arr { display: inline-block; }
+
+.p-title {
+  position: absolute;
+  left: var(--subrel);
+  top: 5px;
+  white-space: pre;
+  text-box: trim-both cap alphabetic;
+}
+
+.p-link {
+  position: absolute;
+  left: var(--subrel);
+  top: 17px;
+  text-box: trim-both cap alphabetic;
+}
+.p-link img { left: 40px; }
+
+.p-bio {
+  display: none;
+  line-height: normal;
+  text-box: trim-both cap alphabetic;
+}
+.p-row.open .p-bio {
+  display: block;
+  margin-top: 3px;
+  margin-bottom: 14px;
+}
+
+#p-assoc {
+  position: relative;
+  border-top: 1px solid var(--red);
+  height: 105px;
+}
+.assoc-label, .assoc-name {
+  position: absolute;
+  left: 0;
+  white-space: pre;
+  text-box: trim-both cap alphabetic;
+}
+.assoc-label { top: 5px; }
+.assoc-title {
+  position: absolute;
+  left: var(--subrel);
+  white-space: pre;
+  line-height: normal;
+  text-box: trim-both cap alphabetic;
+}
+
+/* ---------- close X ---------- */
+
+#close-overlay {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+}
+#close-overlay img { display: block; width: 100%; height: 100%; }
+
+/* ---------- Home 1: intro / loading screen ---------- */
+
+#intro {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #000;
+  will-change: transform;
+}
+body[data-state="main"] #intro { display: none; }
+
+/* 363px / -3.63px tracking on a 1440 frame, scaled with the viewport */
+#hero-word {
+  margin: 0;
+  position: absolute;
+  left: 0.34722vw;              /* 5px    @1440 */
+  top: 4.375vw;                 /* 63px   @1440 */
+  font-size: 25.20833vw;        /* 363px  @1440 */
+  font-weight: 700;
+  letter-spacing: -0.01em;      /* -3.63px @363px */
+  white-space: pre;
+  text-box: trim-both cap alphabetic;
+}
+#hero-word .e1 { letter-spacing: 0.00044em; }   /* Figma: +0.16px on the first E */
+
+#hero-tm {
+  position: absolute;
+  left: 97.2248vw;              /* 1400.04px @1440 */
+  top: 4.41319vw;               /* 63.55px   @1440 */
+  width: 1.87248vw;             /* 26.96px   @1440 */
+  height: auto;
+}

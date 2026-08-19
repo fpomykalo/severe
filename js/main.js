@@ -33,7 +33,7 @@ const SHOWCASE_IMAGES = [
   'Sub-branding Wayfinding.jpg',
   'Superology WIP-01.jpg',
   'Superology WIP-03.jpg',
-].map(f => encodeURI('assets/images/' + f))
+].map(f => encodeURI('assets/v1-v2/images/' + f))
 
 /* ------------------------------------------------------------- typewriter */
 

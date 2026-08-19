@@ -1,34 +1,35 @@
-# sub rosa — TheStudio V1
+# SEVERE™
 
-Single-page site built from the Figma file `TheStudio V1` (frames **Home 3** → **Home 2**, 1440×900 reference).
+Website for the SEVERE studio. Static site — plain HTML, CSS and ES modules, no build step.
 
-No build step — static files. Serve the folder with any static server:
+**Live:** https://fpomykalo.github.io/severe/ (GitHub Pages, deploys from `main` automatically on every push)
 
-```sh
-python3 -m http.server 8000
-# → http://localhost:8000
-```
+## Versions
 
-## How it works
-
-- **Initial load (Home 3)** — the rose illustration (416×412) sits dead-center in the viewport with the `sub rosā` caption beneath it, exactly as in Figma.
-- **Scroll morph** — scroll drives a 180° rotation around the vertical axis. The illustration shows for the first 90°, goes edge-on, and the rose logo (pre-rotated 180°) is revealed for the second 90° while the whole element translates and scales into the logo's Home 2 position (80, 55, 66×50). Reversible — scrolling back plays it backwards.
-- **Write-on (Home 2)** — once the morph completes, every text element on the page is written out character-by-character (staggered typewriters over the real DOM text nodes), and the four founder columns write out word-by-word on canvas. The London / New York clocks are live.
-- **Text pool** — the founder body copy is rendered on `<canvas>` and laid out DOM-free with [`@chenglou/pretext`](https://github.com/chenglou/pretext) (vendored in `vendor/pretext/`, layout via `prepareWithSegments` + `layoutWithLines`). Every word is a spring-mass particle anchored at its laid-out position. The cursor (which becomes the rose logo over the columns) transfers its velocity plus a radial push to nearby words; low spring stiffness and low damping produce the lingering wave, and per-word "heat" makes disturbed words **more transparent** while the wave passes — the inverse of the pretext text-pool demo at [pretextjs.dev/pretext-demo/showcase-text-pool](https://pretextjs.dev/pretext-demo/showcase-text-pool), where resting text is light and darkens under the cursor. Tuning constants are at the top of `js/textpool.js`.
-
-- **Showcase (Home 4)** — the `showcase+` link under `Manifesto+` opens a fullscreen overlay: the work images render as a halftone print (#1A1A1A dots on black) and the area around the cursor resolves into the full-colour raster through a soft-edged lens, ported from react-bits' [Halftone Reveal](https://reactbits.dev/animations/halftone-reveal) (ogl → raw WebGL2; dotDensity 100, dotSize 0.8, contrast 1, revealRadius 0.6, edge 0.9, follow 0.1). Moving the cursor swaps in a random other image from `assets/images/` every ~180px of travel. The × in the upper right (or Escape) closes it.
-- **Write-out** — scrolling back up plays the whole write-on timeline in reverse while the rose flips back to centre.
+| Version | Page | Status |
+| --- | --- | --- |
+| **v3** | [`v3.html`](v3.html) | **Active** — current SEVERE design (Figma "SEVERE™ — Web", Home 1–5) |
+| v2 | [`v2.html`](v2.html) | Frozen — previous "sub rosa" design |
+| v1 | [`index.html`](index.html) | Frozen — original "sub rosa" design |
 
 ## Structure
 
 ```
-index.html          page + all copy
-css/style.css       Figma-mapped positions/typography (text-box: trim-both cap alphabetic)
-js/main.js          scroll morph, write-on/write-out timeline, clocks, showcase, orchestration
-js/textpool.js      canvas text-pool effect (pretext layout + spring physics)
-js/halftone.js      WebGL2 halftone-reveal (ported from react-bits) + image cycling
-vendor/pretext/     @chenglou/pretext 0.0.8 dist (ES modules, MIT)
-assets/             the two rose SVGs (exported from Figma) + Geist/Geist Mono woff2
+v3.html             v3 markup
+css/style3.css      v3 styles
+js/main3.js         v3 logic (intro reveal, image pool, overlay, personnel accordion)
+assets/v3/          v3 assets
+  fonts/            Haas Grot Disp 65 Medium + 75 Bold (woff2 for the site, otf source)
+  images/f/ z/      fullscreen background image pool (3840×2160 JPGs)
+  svg/              wordmark, ™, arrows, close X
+
+index.html, v2.html, css/, js/, vendor/   v1 + v2 code (frozen)
+assets/v1-v2/                             v1 + v2 assets (fonts, images, SVGs)
 ```
 
-Fonts are self-hosted (`geist` npm package — the same faces Google Fonts serves), so the page works offline; swap in the Google Fonts `<link>` if preferred.
+## Local development
+
+```
+python3 -m http.server 8321
+# open http://localhost:8321/v3.html
+```

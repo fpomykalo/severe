@@ -21,7 +21,7 @@ const COLUMNS = [
   { id: 'col-3', name: 'noah smith',     paras: [P_BIO, P_LONG],     url: 'https://www.linkedin.com/in/noahjoelsmith/' },
 ]
 
-// Showcase reel: set to the video URL (e.g. 'assets/reel.mp4') once the
+// Showcase reel: set to the video URL (e.g. 'assets/v1-v2/reel.mp4') once the
 // asset lands — the halftone lens then reveals the single looping reel
 // instead of cycling the stills (same effect, no randomization)
 const SHOWCASE_VIDEO = null
@@ -39,7 +39,7 @@ const SHOWCASE_IMAGES = [
   'Sub-branding Wayfinding.jpg',
   'Superology WIP-01.jpg',
   'Superology WIP-03.jpg',
-].map(f => encodeURI('assets/images/' + f))
+].map(f => encodeURI('assets/v1-v2/images/' + f))
 
 /* ------------------------------------------------------------- typewriter */
 
