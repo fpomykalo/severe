@@ -7,102 +7,122 @@ step: plain HTML/CSS/ES modules at the repo root.
   `main` root on every push — always push finished work to `main`).
 - **v3 is the active version** at `/v3.html` — the SEVERE design, built 1:1
   from Figma **"SEVERE™ — Web"** (fileKey `sCy8IEBBk0pDV7BCy3bE4C`, page
-  "Page 3.4" node 2327:2783), desktop frames **Home 1–5**. Mobile frames are
-  intentionally ignored for now.
-- **v1 (`index.html` + css/style.css + js/main.js + js/textpool.js) and
-  v2 (`v2.html` + css/style2.css + js/main2.js + js/textpool2.js) are the
-  old "sub rosa" site and are FROZEN — never touch them.** `js/halftone.js`
-  and `vendor/pretext/` belong to v1/v2. Their assets live in
-  `assets/v1-v2/` (moved there Aug 2026; all v1/v2 files reference that
-  path). The repo will eventually be cleaned down to v3 and exported to a
-  new repository.
+  node 2327:2783). Desktop frames **Home 1–4** (Home 4 = the single overlay
+  frame, N. Smith expanded; Home 6/7 are obsolete 10px copies the user keeps
+  for their record). Mobile frames **iPhone 16 - 7..12**.
+- **v1 (`index.html`) and v2 (`v2.html`) are the old "sub rosa" site and are
+  FROZEN — never touch them.** Their assets live in `assets/v1-v2/`;
+  `js/halftone.js` + `vendor/pretext/` belong to them. Repo will eventually
+  be cleaned down to v3 and exported to a new repository.
 
 ## v3 structure
 
 ```
-v3.html            markup: bg image layer, dim, cities/clock, wordmark, nav,
-                   overlay (3 columns), intro hero
-css/style3.css     all layout (CSS-only responsive rules, see grid below)
-js/main3.js        scramble reveal, one-way intro scroll, image pool,
-                   overlay/tab state, personnel accordion, live clocks
-assets/v3/fonts/   HaasGrotDisp-65Medium / -75Bold (woff2 site + otf source)
-assets/v3/images/  f/f01..f17.jpg + z/z01..z21.jpg (renamed from the user's
-                   f-3840x2160 / z-3840x2160 uploads), one shuffled pool
-assets/v3/svg/     severe-wordmark.svg (outline lockup, reference only),
-                   tm.svg (7×3), x.svg (26×26), arrow-down.svg (4×7, "open"
-                   marker), arrow-up.svg (5×5 external-link ↗ used on
-                   LinkedIn/email despite the name)
+v3.html            markup: bg image, dim, cities/clock, wordmark, nav,
+                   overlay (3 columns), intro (hero lockup + scroll arrow)
+css/style3.css     all layout; mobile ≤700px via one media query
+js/main3.js        scramble engine, morph, image pool, overlay, accordion,
+                   live clocks
+assets/v3/fonts/   HaasGrotDisp-65Medium / -75Bold (woff2 + otf source)
+assets/v3/images/  f/f01..f17.jpg + z/z01..z21.jpg — one shuffled pool
+assets/v3/svg/     tm.svg (7×3), x.svg (26×26), x-m.svg (47×47),
+                   arrow-scroll.svg (12×20 intro ↓), arrow-down.svg (5×9
+                   "open" ↓) + arrow-down-m.svg (6×10), arrow-up.svg (7×7
+                   external ↗) + arrow-up-m.svg (8×8),
+                   severe-wordmark.svg (outline lockup, reference only)
 ```
 
 ## Design rules (Figma-exact, don't drift)
 
-- **Color:** everything is `#FF0000` on `#000`. Dim states are *element
-  opacity*, not different reds: inactive overlay columns 0.3, inactive
-  bottom-nav items 0.2, clock line 0.3. Selection red-on-black inverted.
-- **Grid:** 6 columns, 20px viewport margins, 16px gutters →
-  `--cw:(100vw-120px)/6` (220 @1440). Rails: wordmark `25vw+8` (368),
-  manifesto `50vw+8` (728), personnel `66.667vw+4` (964), inquire
-  `83.333vw` (1200). Right sub-column inside personnel: rail +
-  `(cw+16)/2` (1082 @1440). All bottom/top/left/right text margins are 20px.
-- **Type:** Haas Grot Disp, family 'HaasDisp' (500 = 65 Medium,
-  700 = 75 Bold). Sizes: 10px UI/body, 36px nav + header wordmark,
-  hero 363px @1440 (`25.20833vw`, letter-spacing −0.01em, first E span
-  +0.16px/363 em — Figma kerning fix). ALL text is cap-aligned with
-  `text-box: trim-both cap alphabetic`; font metrics: upm 1000, cap 715,
-  asc 818, desc 182, lineGap 200 → line-height "normal" = 1.2 (12px @10px),
-  matching Figma exactly.
-- **Home 1 (intro):** hero at left 5px / cap-top 63px @1440, ™ svg at
-  1400.04/63.55 w26.96 — whole lockup in vw units so it scales with the
-  viewport. Letters scramble on load ("Random Letter/Character Offset
-  Reveal"): 6 slots flip random chars every 45ms, settle L→R at
-  600+i·160ms after fonts load. Cities line 20/20, clock 20/32 (live:
-  Europe/London + America/Detroit, HH:MM.SS, second clock offset measured
-  from the Figma string "22:04.37" + 20 spaces via canvas measureText).
-- **Intro scroll is one-way:** 200vh spacer, hero translates up 1:1 with
-  scroll; at scrollY ≥ vh → `body[data-state=main]`, spacer collapses,
-  scroll locks. No way back (Figma: "that was just the loading screen").
-- **Home 2/3:** wordmark (36 Bold + tm at +141px) top 20; nav
-  Manifesto/Personnel/Inquire 36px Medium, baseline 20px above viewport
-  bottom. Pointer movement cycles the fullscreen image pool (one image
-  element, object-fit cover, swap every 140ms of movement, shuffled once,
-  only already-preloaded images; preloading starts at page load).
-- **Overlay (Home 4/5):** click any nav item → `body.overlay` +
-  `data-tab`. Background image freezes, gets `filter: blur(10px)`
-  (Figma layer-blur 20 = CSS radius 10) + scale(1.03) edge-bleed fix +
-  90% black `#dim`. All three dropdown columns show; active column
-  opacity 1, others 0.3; bottom nav active 1, others 0.2. Top labels:
-  inactive "Name +", active "Name ↓" (arrow-down.svg, gap 2). Lines are
-  1px #FF0000 borders; strokes sit at 41→42px (Figma line y42 draws its
-  stroke upward). Close X 26×26 at right/bottom 20; Esc also closes.
-  Column label quirk: manifesto label at rail+2 (Figma 730), others on
-  rail exactly.
-- **Personnel column:** rows K. Kitev / F. Pomykalo / Ž. Rosić / N. Smith,
-  39px pitch (border 1 + head 38): name cap +5 from stroke, title cap +5
-  on sub-column, LinkedIn +17 (↗ 5×5 at text+40, top = cap top).
-  Accordion: one open max; open row swaps "+" for ↓; bio (10px, w=cw)
-  cap at stroke+41 (margin 3), next stroke at bio bottom +14
-  (Figma Home 5: bio 200..423, next line 437-438). Permanent Associates
-  section (not expandable): label +5, P. de Guzman +27, LinkedIn +51,
-  C. Duma +73, LinkedIn +97 (offsets inside padding box).
-  LinkedIn URLs: kkitev, filip-pomykalo, zivanrosic, noahjoelsmith,
-  philipdeguzman, cody-duma-92439780.
-  **K. Kitev's bio is a placeholder (copy of N. Smith's) — swap when the
-  user provides the real one.** FP + ŽR bios are real (user-provided,
-  Aug 2026); NS bio is from Figma.
-- **Inquire column:** info@severe.work (mailto) + ↗ at text+81; underline
-  on hover only.
-- **Manifesto column:** body copy from Figma (5 paragraphs, blank line
-  between = pre-wrap \n\n), cap at 47 under the 41-42 stroke.
+- **Color:** `#FF0000` on `#000`. Inactive overlay columns opacity 0.3,
+  inactive bottom nav 0.2, clock line 0.3. All copy uses typographer's
+  apostrophes (’ never ').
+- **Grid (desktop 1440):** 6 columns, 20px margins, 16px gutters →
+  `--cw:(100vw-120px)/6` (220). Rails: wordmark `25vw+8` (368), manifesto
+  `50vw+8` (728), personnel `66.667vw+4` (964), inquire `83.333vw` (1200).
+  Personnel sub-column: rail + `(cw+16)/2` (1082). Nav baselines 20px above
+  bottom; X 26×26 at right/bottom 20.
+- **Type:** 'HaasDisp' (500 = 65 Medium, 700 = 75 Bold). Cities/clock 10px.
+  Overlay text 12px with **line-height 14px** (Figma uses explicit 14, not
+  the 14.4 the font's normal would give). Nav + wordmark 36px (no tracking).
+  Hero 363px, tracking −3.63px, first-E span +0.16px. All text cap-aligned
+  via `text-box: trim-both cap alphabetic`. Font: upm 1000, cap 715 → cap
+  is 8.577px at 12px; Figma's layout uses integer coordinates from a
+  rounded 9px cap box, so flow gaps carry the remainder: `.p-link`
+  margin-top 5.42px, `.p-sub` padding-bottom 19.42px, bio margin-bottom
+  19.42px. Don't "clean up" these fractions.
+- **Home 1 (intro):** hero is #hero-lockup in design units (S ink at 0,0,
+  cap box 1416×260; word at −6px, ™ at 1389.04/0.55 w26.96), positioned by
+  a JS transform: desktop `translate(11k,63k) scale(k)` (k=vw/1440), mobile
+  rotated −90° scaled 0.51554 centered at (50%+0.42, 50%−2). Cities 20/20
+  + clock 20/32 (mobile 16/16, 16/28), live London + Detroit HH:MM.SS,
+  second clock offset measured from "22:04.37"+20 spaces. ↓ arrow 12×20
+  centered, 20 (16 mobile) from bottom.
+  **Reveal:** staggered Random Character Offset — hero letters appear one
+  after another (i·90ms) while already-visible slots keep cycling (45ms
+  flips), settle L→R; cities and both clocks reveal per-character the same
+  way. **There is no page scroll/scrollbar** (body overflow hidden).
+- **Intro → main morph:** first wheel-down / swipe-up / ArrowDown triggers
+  a one-way 900ms ease morph: the lockup shrinks and travels into the
+  header wordmark spot (letter-spacing lerps −3.63→0 so it lands exactly on
+  the 36px wordmark; ™ lerps separately to its 7×3 box at +141), while the
+  three nav items write themselves out with the same scramble. States:
+  body[data-state=intro→morph→main]; at main the real #wordmark swaps in.
+- **Home 2/3:** pointer movement cycles the fullscreen pool (swap per
+  140ms of movement, object-fit cover, no effects). Images are decoded
+  ahead (`img.decode()`, decoding=async, next-2 prefetch) — never swap
+  undecoded 3840px JPEGs (main-thread decode jank).
+- **Overlay:** click nav → body.overlay + data-tab. Image freezes, blur
+  7.5px (user spec "blur 15" = Figma diameter) + scale(1.03) + **80% black
+  dim**. Labels top 20 on the rails (no offsets); rules/borders stroke at
+  [48,49] (Figma line y49 draws upward); first text cap +5 under the line
+  (54). Active label "Name ↓" (5×9), inactive "Name +".
+  **Interactions:** clicking the active nav item or active top label
+  toggles the overlay closed; clicking empty screen (anything that isn't
+  column text/X/nav) closes; clicking any column's content activates that
+  column's tab; switching tabs collapses any open personnel row; Esc
+  closes. ALL links underline on hover (nav items, top labels, names,
+  LinkedIn, email).
+- **Personnel column:** rows are content-driven (no fixed pitch): name cap
+  +5 from stroke; right sub-column title (K. Kitev's "Director
+  of/Operations" is a hard 2-line break on desktop, one line on mobile —
+  .ttl-d/.ttl-m spans); LinkedIn cap = title cap + lines·14; next stroke =
+  LinkedIn cap + 28. Accordion (one open): bio cap = LinkedIn cap + 29,
+  next stroke = bio bottom + 19.42. Permanent Associates (static): label
+  +5, entries +34/+91, links +62/+119, height 128. LinkedIn ↗ 7×7 at
+  text+48; email ↗ at +97. URLs: kkitev, filip-pomykalo, zivanrosic,
+  noahjoelsmith, philipdeguzman, cody-duma-92439780.
+  **K. Kitev's bio is a placeholder (copy of N. Smith's).** FP + ŽR bios
+  are user-provided (Aug 2026); NS from Figma.
+- **Mobile (≤700px, frames at 393):** margins 16. Wordmark 16/67. Main
+  nav = stacked 66px items at 16/137/204/271. Open section: active title
+  at 137, others hidden, X 47×47 at right 16/top 137, rule at 16/227 full
+  width, content 14px with **line-height 15px** scrolling under the fixed
+  rule (col is the scroll container, border-top = the rule, first p-row
+  drops its border). Rows: text +10 under lines, sub-column at left
+  +193.63, gaps 5/20 as desktop. Manifesto body +15 under rule; email +10,
+  ↗ 8×8 at +112. Note: Figma iPhone-10/11 have inconsistent F.P./Ž.R. row
+  gaps (7/20 vs the 20 rule) — implemented with the uniform rule instead;
+  flagged to the user.
+- **Manifesto column:** Figma copy, 5 paragraphs, blank line between
+  (pre-wrap \n\n), cap 54 under the 48/49 stroke.
 
 ## Workflow conventions
 
-- Cross-reference Figma (get_metadata on 2327:2783, get_design_context on
-  frames) whenever the user says they changed something there.
-- Test with Playwright against `python3 -m http.server` using
-  `/opt/pw-browsers/chromium-*/chrome-linux/chrome`
-  (`--use-angle=swiftshader --enable-unsafe-swiftshader` for WebGL in
-  v1/v2). Verify numerically (getBoundingClientRect vs the rules above)
-  and visually (1440×900 screenshots) before pushing.
+- Cross-reference Figma (get_metadata on 2327:2783 + get_design_context)
+  whenever the user says they changed something there. get_metadata
+  collapses whitespace in text — use get_design_context for line breaks.
+- Figma asset URLs are NOT curl-able through the egress proxy; export
+  vectors via use_figma `exportAsync({format:'SVG_STRING'})`.
+- Test with Playwright against `python3 -m http.server 8321` (start it
+  `cd /home/user/severe && nohup python3 -m http.server 8321 & disown`),
+  Chromium at `/opt/pw-browsers/chromium-*/chrome-linux/chrome`
+  (`--use-angle=swiftshader --enable-unsafe-swiftshader` for v1/v2 WebGL).
+  Verify numerically (getBoundingClientRect vs the rules above) AND
+  visually at 1440×900 and 393×852. NOTE: under SwiftShader the blur/dim
+  transitions repaint slowly — wait ≥1.5s after opening the overlay before
+  reading computed opacities.
 - The user sometimes uploads via the GitHub web UI — always fetch+merge
-  origin/main before pushing.
-- Commit + push to `main` when verified; Pages redeploys itself.
+  origin/main before pushing. Commit messages describe the change, no
+  model IDs. Pages redeploys on push (verify via GitHub MCP actions_list;
+  output overflows — parse the saved JSON with python).

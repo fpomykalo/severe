@@ -11,106 +11,114 @@
 </head>
 <body data-state="intro">
 
-  <!-- fullscreen cursor-driven image (Home 3) -->
+  <!-- fullscreen cursor-driven image -->
   <div id="bg"><img id="bg-img" alt=""></div>
   <div id="dim"></div>
 
-  <!-- persistent top-left: cities + clocks (all frames) -->
+  <!-- persistent top-left: cities + clocks -->
   <div id="cities">London   /   New York   /   Detroit</div>
   <div id="clock"><span id="clock-l">22:04.37</span><span id="clock-r">16:04.37</span></div>
 
-  <!-- Home 2+: header wordmark -->
+  <!-- header wordmark (main state) -->
   <div id="wordmark" aria-label="SEVERE">SEVERE<img id="wordmark-tm" src="assets/v3/svg/tm.svg" alt="™"></div>
 
-  <!-- Home 2+: bottom navigation -->
+  <!-- navigation -->
   <nav id="nav">
     <div class="navitem" id="nav-manifesto" data-tab="manifesto">Manifesto</div>
     <div class="navitem" id="nav-personnel" data-tab="personnel">Personnel</div>
     <div class="navitem" id="nav-inquire"   data-tab="inquire">Inquire</div>
   </nav>
 
-  <!-- Home 4/5: overlay dropdowns -->
+  <!-- overlay dropdowns -->
   <div id="overlay">
     <section class="col col-manifesto" id="col-manifesto">
-      <div class="col-label" data-tab="manifesto">Manifesto<span class="plus"> +</span><img class="arr" src="assets/v3/svg/arrow-down.svg" alt=""></div>
-      <div class="col-body" id="manifesto-body">We built the brand for the most controversial company in technology: its language, its look, its logic. We took the founder's singular vision, translated it into something people could hold on to and feel, and made an indecipherable product impossible to ignore — on the ticker, on the tactical edge, on the pit wall, on the chalet at Davos. In our view, mystique is deliberate withholding; controversy is evidence of consequence — the same instrument, held at different angles. You have an opinion about that company. And that was the point.
+      <div class="col-label" data-tab="manifesto">Manifesto<span class="plus"> +</span><span class="arr"></span></div>
+      <div class="col-body" id="manifesto-body">We built the brand for the most controversial company in technology: its language, its look, its logic. We took the founder’s singular vision, translated it into something people could hold on to and feel, and made an indecipherable product impossible to ignore — on the ticker, on the tactical edge, on the pit wall, on the chalet at Davos. In our view, mystique is deliberate withholding; controversy is evidence of consequence — the same instrument, held at different angles. You have an opinion about that company. And that was the point.
 
-Most brand work is an apology: three safe directions, a committee, a palette that tests well and dies quietly. It's built to be approved at the expense of being believed; nothing that's merely approved is ever remembered. Severity is a method before it's a mood: fewer decisions, made earlier, defended harder. We bring one direction because we've already scrapped the other ninety-nine.
+Most brand work is an apology: three safe directions, a committee, a palette that tests well and dies quietly. It’s built to be approved at the expense of being believed; nothing that’s merely approved is ever remembered. Severity is a method before it’s a mood: fewer decisions, made earlier, defended harder. We bring one direction because we’ve already scrapped the other ninety-nine.
 
-We're a small group of designers, strategists, and filmmakers. There's no account team, no junior bench, no one to hand you off to — the people who made the brand you know are the people who will make yours.
+We’re a small group of designers, strategists, and filmmakers. There’s no account team, no junior bench, no one to hand you off to — the people who made the brand you know are the people who will make yours.
 
-We're not interested in doing nice work; we're here to make you unavoidable, whether you're twelve people or twelve thousand.
+We’re not interested in doing nice work; we’re here to make you unavoidable, whether you’re twelve people or twelve thousand.
 
 Come to us when nice stops working.</div>
     </section>
 
     <section class="col col-personnel" id="col-personnel">
-      <div class="col-label" data-tab="personnel">Personnel<span class="plus"> +</span><img class="arr" src="assets/v3/svg/arrow-down.svg" alt=""></div>
+      <div class="col-label" data-tab="personnel">Personnel<span class="plus"> +</span><span class="arr"></span></div>
       <div id="p-rows">
         <div class="p-row" data-person="kk">
           <div class="p-head">
-            <span class="p-name">K. Kitev<span class="plus"> +</span><img class="arr" src="assets/v3/svg/arrow-down.svg" alt=""></span>
-            <span class="p-title">Director of Operations</span>
-            <a class="p-link ext" href="https://www.linkedin.com/in/kkitev/" target="_blank" rel="noopener">LinkedIn<img src="assets/v3/svg/arrow-up.svg" alt=""></a>
+            <span class="p-name">K. Kitev<span class="plus"> +</span><span class="arr"></span></span>
+            <div class="p-sub">
+              <div class="p-title">Director of<span class="ttl-d">
+</span><span class="ttl-m"> </span>Operations</div>
+              <a class="p-link" href="https://www.linkedin.com/in/kkitev/" target="_blank" rel="noopener">LinkedIn<span class="ext-arr"></span></a>
+            </div>
           </div>
-          <div class="p-bio">Noah Smith started his career as one of Robinhood's first fifty employees, where he built the company's user education, and was then the first external hire onto Palantir's Content Strategy team. He began by leading communications for the Airbus, BMW, and NHS deployments, then built and led the UK Content Strategy team while running product launches and conferences. He owned strategic communications and marketing for partnerships including Scuderia Ferrari, and ultimately led the global Content Strategy org, whose remit was the company's: land and expand the business, and win the argument in public. Since, he has been CMO of Valarian and Director of Communications at Poolside, a frontier AI lab, through its first public model launch. He earned a double major at Dartmouth — highest honors in Studio Art, honors in English — with a minor in French.</div>
+          <div class="p-bio">Noah Smith started his career as one of Robinhood’s first fifty employees, where he built the company’s user education, and was then the first external hire onto Palantir’s Content Strategy team. He began by leading communications for the Airbus, BMW, and NHS deployments, then built and led the UK Content Strategy team while running product launches and conferences. He owned strategic communications and marketing for partnerships including Scuderia Ferrari, and ultimately led the global Content Strategy org, whose remit was the company’s: land and expand the business, and win the argument in public. Since, he has been CMO of Valarian and Director of Communications at Poolside, a frontier AI lab, through its first public model launch. He earned a double major at Dartmouth — highest honors in Studio Art, honors in English — with a minor in French.</div>
         </div>
         <div class="p-row" data-person="fp">
           <div class="p-head">
-            <span class="p-name">F. Pomykalo<span class="plus"> +</span><img class="arr" src="assets/v3/svg/arrow-down.svg" alt=""></span>
-            <span class="p-title">Creative Director</span>
-            <a class="p-link ext" href="https://www.linkedin.com/in/filip-pomykalo/" target="_blank" rel="noopener">LinkedIn<img src="assets/v3/svg/arrow-up.svg" alt=""></a>
+            <span class="p-name">F. Pomykalo<span class="plus"> +</span><span class="arr"></span></span>
+            <div class="p-sub">
+              <div class="p-title">Creative Director</div>
+              <a class="p-link" href="https://www.linkedin.com/in/filip-pomykalo/" target="_blank" rel="noopener">LinkedIn<span class="ext-arr"></span></a>
+            </div>
           </div>
           <div class="p-bio">Brand designer and creative director based in London, working with technology companies, startups and the investors who back them. Sixteen years in, he measures a brand by one thing: how well it holds up once he has left the room. Brand is infrastructure, and it only works if the person who has never opened the guidelines can still use it without breaking anything. That way of thinking came from working in-house. As Global Creative Lead at Palantir he built the brand across every platform, AIP, Foundry, Gotham and Apollo, and handed it to more than four thousand colleagues who used it every day. At FluidStack he led brand design through a period of fast growth. Earlier years were spent at Pentagram, Wieden+Kennedy, Landor, Mother London and Further, on work for Coca-Cola, Nike, Johnnie Walker and Nokia.</div>
         </div>
         <div class="p-row" data-person="zr">
           <div class="p-head">
-            <span class="p-name">Ž. Rosić<span class="plus"> +</span><img class="arr" src="assets/v3/svg/arrow-down.svg" alt=""></span>
-            <span class="p-title">Creative Director</span>
-            <a class="p-link ext" href="https://www.linkedin.com/in/zivanrosic/" target="_blank" rel="noopener">LinkedIn<img src="assets/v3/svg/arrow-up.svg" alt=""></a>
+            <span class="p-name">Ž. Rosić<span class="plus"> +</span><span class="arr"></span></span>
+            <div class="p-sub">
+              <div class="p-title">Creative Director</div>
+              <a class="p-link" href="https://www.linkedin.com/in/zivanrosic/" target="_blank" rel="noopener">LinkedIn<span class="ext-arr"></span></a>
+            </div>
           </div>
           <div class="p-bio">Detroit based creative director with 14+ years of experience in brand design and development, and 8+ years building, leading, and scaling design teams across agency and in-house environments. His design methodology is characterized by the reduction of forms to their fundamental nature, balancing aesthetic potency with functional communication. This approach has driven creative initiatives for a diverse tier of technology startups and global brands, including Airbus, Alienware, Apple/Beats, BMW, Dell, Ferrari, Ford, Google/Youtube, the LA 2024 Olympic Bid Committee, Normal Computing, Novartis, Palantir, Omega, and Vanity Fair.</div>
         </div>
         <div class="p-row" data-person="ns">
           <div class="p-head">
-            <span class="p-name">N. Smith<span class="plus"> +</span><img class="arr" src="assets/v3/svg/arrow-down.svg" alt=""></span>
-            <span class="p-title">Director of Strategy</span>
-            <a class="p-link ext" href="https://www.linkedin.com/in/noahjoelsmith/" target="_blank" rel="noopener">LinkedIn<img src="assets/v3/svg/arrow-up.svg" alt=""></a>
+            <span class="p-name">N. Smith<span class="plus"> +</span><span class="arr"></span></span>
+            <div class="p-sub">
+              <div class="p-title">Director of Strategy</div>
+              <a class="p-link" href="https://www.linkedin.com/in/noahjoelsmith/" target="_blank" rel="noopener">LinkedIn<span class="ext-arr"></span></a>
+            </div>
           </div>
-          <div class="p-bio">Noah Smith started his career as one of Robinhood's first fifty employees, where he built the company's user education, and was then the first external hire onto Palantir's Content Strategy team. He began by leading communications for the Airbus, BMW, and NHS deployments, then built and led the UK Content Strategy team while running product launches and conferences. He owned strategic communications and marketing for partnerships including Scuderia Ferrari, and ultimately led the global Content Strategy org, whose remit was the company's: land and expand the business, and win the argument in public. Since, he has been CMO of Valarian and Director of Communications at Poolside, a frontier AI lab, through its first public model launch. He earned a double major at Dartmouth — highest honors in Studio Art, honors in English — with a minor in French.</div>
+          <div class="p-bio">Noah Smith started his career as one of Robinhood’s first fifty employees, where he built the company’s user education, and was then the first external hire onto Palantir’s Content Strategy team. He began by leading communications for the Airbus, BMW, and NHS deployments, then built and led the UK Content Strategy team while running product launches and conferences. He owned strategic communications and marketing for partnerships including Scuderia Ferrari, and ultimately led the global Content Strategy org, whose remit was the company’s: land and expand the business, and win the argument in public. Since, he has been CMO of Valarian and Director of Communications at Poolside, a frontier AI lab, through its first public model launch. He earned a double major at Dartmouth — highest honors in Studio Art, honors in English — with a minor in French.</div>
         </div>
         <div id="p-assoc">
           <div class="assoc-label">Permanent Associates</div>
-          <div class="assoc-name" style="top:27px">P. de Guzman</div>
-          <div class="assoc-title" style="top:27px">VP of Marketing
+          <div class="assoc-name a-n1">P. de Guzman</div>
+          <div class="assoc-title a-t1">VP of Marketing
 Scale AI</div>
-          <a class="p-link ext assoc-link" style="top:51px" href="https://www.linkedin.com/in/philipdeguzman/" target="_blank" rel="noopener">LinkedIn<img src="assets/v3/svg/arrow-up.svg" alt=""></a>
-          <div class="assoc-name" style="top:73px">C. Duma</div>
-          <div class="assoc-title" style="top:73px">Creative Lead
+          <a class="p-link a-l1" href="https://www.linkedin.com/in/philipdeguzman/" target="_blank" rel="noopener">LinkedIn<span class="ext-arr"></span></a>
+          <div class="assoc-name a-n2">C. Duma</div>
+          <div class="assoc-title a-t2">Creative Lead
 Palantir</div>
-          <a class="p-link ext assoc-link" style="top:97px" href="https://www.linkedin.com/in/cody-duma-92439780/" target="_blank" rel="noopener">LinkedIn<img src="assets/v3/svg/arrow-up.svg" alt=""></a>
+          <a class="p-link a-l2" href="https://www.linkedin.com/in/cody-duma-92439780/" target="_blank" rel="noopener">LinkedIn<span class="ext-arr"></span></a>
         </div>
       </div>
     </section>
 
     <section class="col col-inquire" id="col-inquire">
-      <div class="col-label" data-tab="inquire">Inquire<span class="plus"> +</span><img class="arr" src="assets/v3/svg/arrow-down.svg" alt=""></div>
+      <div class="col-label" data-tab="inquire">Inquire<span class="plus"> +</span><span class="arr"></span></div>
       <div class="col-rule"></div>
-      <a id="email" class="ext" href="mailto:info@severe.work">info@severe.work<img src="assets/v3/svg/arrow-up.svg" alt=""></a>
+      <a id="email" href="mailto:info@severe.work">info@severe.work<span class="ext-arr"></span></a>
     </section>
 
-    <div id="close-overlay" role="button" aria-label="Close"><img src="assets/v3/svg/x.svg" alt=""></div>
+    <div id="close-overlay" role="button" aria-label="Close"></div>
   </div>
 
   <!-- Home 1: intro / loading screen -->
   <div id="intro">
-    <div id="hero">
+    <div id="hero-lockup">
       <p id="hero-word"><span>S</span><span class="e1">E</span><span>V</span><span>E</span><span>R</span><span>E</span></p>
       <img id="hero-tm" src="assets/v3/svg/tm.svg" alt="™">
     </div>
+    <img id="intro-arrow" src="assets/v3/svg/arrow-scroll.svg" alt="">
   </div>
-
-  <div id="scroll-spacer"></div>
 
   <script type="module" src="js/main3.js"></script>
 </body>

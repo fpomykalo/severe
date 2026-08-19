@@ -1,6 +1,7 @@
-/* SEVERE v3 — built 1:1 from Figma "SEVERE™ — Web", frames Home 1–5 (desktop).
+/* SEVERE v3 — built 1:1 from Figma "SEVERE™ — Web" (desktop Home 1–4, iPhone 16 - 7..12).
    Grid: 6 columns, 20px viewport margins, 16px gutters (column = 220px @1440).
-   All red is #FF0000; inactive dropdown columns 30%, inactive bottom nav 20%. */
+   Red is #FF0000; inactive dropdown columns 30%, inactive bottom nav 20%.
+   Overlay text 12px / line-height 14 (desktop), 14px / 15 (mobile). */
 
 @font-face {
   font-family: 'HaasDisp';
@@ -17,6 +18,7 @@
 
 :root {
   --red: #FF0000;
+  --m: 20px;                                  /* viewport text margin */
   --cw: calc((100vw - 120px) / 6);            /* 220 @1440 */
   --r3: calc(50vw + 8px);                     /* 728 @1440 */
   --r4: calc(66.66667vw + 4px);               /* 964 @1440 */
@@ -28,23 +30,19 @@
 
 html, body {
   margin: 0;
+  height: 100%;
+  overflow: hidden;                            /* no scrollbar, ever */
   background: #000;
   color: var(--red);
   font-family: 'HaasDisp', Helvetica, Arial, sans-serif;
   font-weight: 500;
-  -webkit-font-smoothing: antialiased;
 }
 
 ::selection { background: var(--red); color: #000; }
 
 a { color: inherit; text-decoration: none; }
 
-body[data-state="main"] { overflow: hidden; }
-
-#scroll-spacer { height: 200vh; }
-body[data-state="main"] #scroll-spacer { height: 0; }
-
-/* ---------- fullscreen image + overlay dim (Home 3 / 4) ---------- */
+/* ---------- fullscreen image + overlay dim ---------- */
 
 #bg {
   position: fixed;
@@ -60,14 +58,14 @@ body[data-state="main"] #scroll-spacer { height: 0; }
   object-fit: cover;
   transition: filter .25s ease, transform .25s ease;
 }
-/* Figma layer blur 20 = CSS blur radius 10px; slight scale hides blurred edge bleed */
-body.overlay #bg-img { filter: blur(10px); transform: scale(1.03); }
+/* Figma layer blur 15 = CSS blur radius 7.5px; slight scale hides blurred edge bleed */
+body.overlay #bg-img { filter: blur(7.5px); transform: scale(1.03); }
 
 #dim {
   position: fixed;
   inset: 0;
   z-index: 1;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.8);
   opacity: 0;
   pointer-events: none;
   transition: opacity .25s ease;
@@ -78,17 +76,17 @@ body.overlay #dim { opacity: 1; }
 
 #cities, #clock {
   position: fixed;
-  left: 20px;
+  left: var(--m);
   z-index: 50;
   font-size: 10px;
   white-space: pre;
   text-box: trim-both cap alphabetic;
 }
-#cities { top: 20px; }
-#clock  { top: 32px; color: rgba(255, 0, 0, 0.3); }
+#cities { top: var(--m); }
+#clock  { top: calc(var(--m) + 12px); color: rgba(255, 0, 0, 0.3); }
 #clock-r { position: absolute; left: var(--clock2, 72px); top: 0; }
 
-/* ---------- header wordmark (Home 2+) ---------- */
+/* ---------- header wordmark ---------- */
 
 #wordmark {
   position: fixed;
@@ -99,7 +97,9 @@ body.overlay #dim { opacity: 1; }
   font-weight: 700;
   white-space: pre;
   text-box: trim-both cap alphabetic;
+  visibility: hidden;
 }
+body[data-state="main"] #wordmark { visibility: visible; }
 #wordmark-tm {
   position: absolute;
   left: 141px;
@@ -108,7 +108,10 @@ body.overlay #dim { opacity: 1; }
   height: 3px;
 }
 
-/* ---------- bottom navigation (Home 2+) ---------- */
+/* ---------- navigation ---------- */
+
+#nav { visibility: hidden; }
+body[data-state="morph"] #nav, body[data-state="main"] #nav { visibility: visible; }
 
 .navitem {
   position: fixed;
@@ -120,6 +123,7 @@ body.overlay #dim { opacity: 1; }
   text-box: trim-both cap alphabetic;
   transition: opacity .15s ease;
 }
+.navitem:hover { text-decoration: underline; }
 #nav-manifesto { left: var(--r3); }
 #nav-personnel { left: var(--r4); }
 #nav-inquire   { left: var(--r5); }
@@ -129,7 +133,7 @@ body[data-tab="manifesto"] #nav-manifesto { opacity: 1; }
 body[data-tab="personnel"] #nav-personnel { opacity: 1; }
 body[data-tab="inquire"]   #nav-inquire   { opacity: 1; }
 
-/* ---------- overlay dropdowns (Home 4 / 5) ---------- */
+/* ---------- overlay dropdowns ---------- */
 
 #overlay { display: none; position: fixed; inset: 0; z-index: 10; }
 body.overlay #overlay { display: block; }
@@ -139,7 +143,8 @@ body.overlay #overlay { display: block; }
   top: 0;
   height: 100%;
   width: var(--cw);
-  font-size: 10px;
+  font-size: 12px;
+  line-height: 14px;
   opacity: 0.3;
   transition: opacity .15s ease;
 }
@@ -158,10 +163,17 @@ body[data-tab="inquire"]   .col-inquire   { opacity: 1; }
   cursor: pointer;
   text-box: trim-both cap alphabetic;
 }
-.col-manifesto .col-label { left: 2px; }
+.col-label:hover { text-decoration: underline; }
 
-/* "+" when closed, ↓ arrow when this tab is active */
-.arr { display: none; width: 4px; height: 7px; margin-left: 2px; vertical-align: baseline; }
+/* "+" when closed, ↓ arrow when open/active */
+.arr {
+  display: none;
+  width: 5px;
+  height: 9px;
+  margin-left: 2px;
+  vertical-align: baseline;
+  background: url('../assets/v3/svg/arrow-down.svg') no-repeat center / contain;
+}
 body[data-tab="manifesto"] .col-manifesto .col-label .plus,
 body[data-tab="personnel"] .col-personnel .col-label .plus,
 body[data-tab="inquire"]   .col-inquire   .col-label .plus { display: none; }
@@ -171,7 +183,7 @@ body[data-tab="inquire"]   .col-inquire   .col-label .arr { display: inline-bloc
 
 .col-rule {
   position: absolute;
-  top: 41px;
+  top: 48px;
   left: 0;
   right: 0;
   height: 1px;
@@ -180,36 +192,41 @@ body[data-tab="inquire"]   .col-inquire   .col-label .arr { display: inline-bloc
 
 .col-body {
   position: absolute;
-  top: 41px;
+  top: 48px;
   left: 0;
   right: 0;
   border-top: 1px solid var(--red);
   padding-top: 5px;
-  line-height: normal;
   white-space: pre-wrap;
   text-box: trim-both cap alphabetic;
 }
 
-/* external links: text + 5x5 arrow riding the cap line */
-.ext { position: relative; white-space: pre; }
-.ext img { position: absolute; top: 0; width: 5px; height: 5px; }
+/* external links: text + ↗ arrow riding the cap line */
+.ext-arr {
+  position: absolute;
+  top: 0;
+  width: 7px;
+  height: 7px;
+  background: url('../assets/v3/svg/arrow-up.svg') no-repeat center / contain;
+}
 
 #email {
   position: absolute;
-  top: 47px;
+  top: 54px;
   left: 0;
+  white-space: pre;
   text-box: trim-both cap alphabetic;
 }
 #email:hover { text-decoration: underline; }
-#email img { left: 81px; }
+#email .ext-arr { left: 97px; }
 
 /* ---------- personnel rows ---------- */
 
-#p-rows { position: absolute; top: 41px; left: 0; right: 0; }
+#p-rows { position: absolute; top: 48px; left: 0; right: 0; }
 
 .p-row { border-top: 1px solid var(--red); }
 
-.p-head { position: relative; height: 38px; cursor: pointer; }
+.p-head { position: relative; cursor: pointer; }
 
 .p-name {
   position: absolute;
@@ -218,40 +235,48 @@ body[data-tab="inquire"]   .col-inquire   .col-label .arr { display: inline-bloc
   white-space: pre;
   text-box: trim-both cap alphabetic;
 }
+.p-name:hover { text-decoration: underline; }
+.p-name .arr { vertical-align: baseline; }
 .p-row.open .p-name .plus { display: none; }
 .p-row.open .p-name .arr { display: inline-block; }
 
+/* Figma places rows on integer coordinates using a rounded 9px cap box;
+   the real cap box at 12px is 8.577px, so the gaps carry the 0.423 remainder */
+.p-sub { margin-left: var(--subrel); padding: 5px 0 19.42px; }
+
 .p-title {
-  position: absolute;
-  left: var(--subrel);
-  top: 5px;
   white-space: pre;
   text-box: trim-both cap alphabetic;
 }
+.ttl-m { display: none; }   /* K. Kitev title: hard break on desktop, one line on mobile */
 
 .p-link {
-  position: absolute;
-  left: var(--subrel);
-  top: 17px;
+  position: relative;
+  display: block;
+  width: -moz-max-content;
+  width: max-content;
+  margin-top: 5.42px;
+  white-space: pre;
   text-box: trim-both cap alphabetic;
 }
-.p-link img { left: 40px; }
+.p-link:hover { text-decoration: underline; }
+.p-link .ext-arr { left: 48px; }
 
 .p-bio {
   display: none;
-  line-height: normal;
+  white-space: pre-wrap;
   text-box: trim-both cap alphabetic;
 }
 .p-row.open .p-bio {
   display: block;
-  margin-top: 3px;
-  margin-bottom: 14px;
+  margin-top: 1px;
+  margin-bottom: 19.42px;
 }
 
 #p-assoc {
   position: relative;
   border-top: 1px solid var(--red);
-  height: 105px;
+  height: 128px;
 }
 .assoc-label, .assoc-name {
   position: absolute;
@@ -264,9 +289,13 @@ body[data-tab="inquire"]   .col-inquire   .col-label .arr { display: inline-bloc
   position: absolute;
   left: var(--subrel);
   white-space: pre;
-  line-height: normal;
   text-box: trim-both cap alphabetic;
 }
+#p-assoc .p-link { position: absolute; left: var(--subrel); margin: 0; }
+.a-n1, .a-t1 { top: 34px; }
+.a-l1 { top: 62px; }
+.a-n2, .a-t2 { top: 91px; }
+.a-l2 { top: 119px; }
 
 /* ---------- close X ---------- */
 
@@ -277,8 +306,8 @@ body[data-tab="inquire"]   .col-inquire   .col-label .arr { display: inline-bloc
   width: 26px;
   height: 26px;
   cursor: pointer;
+  background: url('../assets/v3/svg/x.svg') no-repeat center / contain;
 }
-#close-overlay img { display: block; width: 100%; height: 100%; }
 
 /* ---------- Home 1: intro / loading screen ---------- */
 
@@ -287,28 +316,146 @@ body[data-tab="inquire"]   .col-inquire   .col-label .arr { display: inline-bloc
   inset: 0;
   z-index: 40;
   background: #000;
-  will-change: transform;
 }
+body[data-state="morph"] #intro { background: transparent; }
 body[data-state="main"] #intro { display: none; }
 
-/* 363px / -3.63px tracking on a 1440 frame, scaled with the viewport */
+/* lockup in design units: S ink at (0,0), cap height 260, full width 1416 (incl ™).
+   JS drives the transform (intro position, morph into the header wordmark). */
+#hero-lockup {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1416px;
+  height: 260px;
+  transform-origin: 0 0;
+}
 #hero-word {
   margin: 0;
   position: absolute;
-  left: 0.34722vw;              /* 5px    @1440 */
-  top: 4.375vw;                 /* 63px   @1440 */
-  font-size: 25.20833vw;        /* 363px  @1440 */
+  left: -6px;                    /* S side bearing at 363px */
+  top: 0;
+  font-size: 363px;
   font-weight: 700;
-  letter-spacing: -0.01em;      /* -3.63px @363px */
+  letter-spacing: -3.63px;
   white-space: pre;
   text-box: trim-both cap alphabetic;
 }
-#hero-word .e1 { letter-spacing: 0.00044em; }   /* Figma: +0.16px on the first E */
-
+#hero-word .e1 { letter-spacing: 0.16px; }     /* Figma kerning fix on the first E */
 #hero-tm {
   position: absolute;
-  left: 97.2248vw;              /* 1400.04px @1440 */
-  top: 4.41319vw;               /* 63.55px   @1440 */
-  width: 1.87248vw;             /* 26.96px   @1440 */
+  left: 1389.04px;
+  top: 0.55px;
+  width: 26.96px;
   height: auto;
+}
+
+#intro-arrow {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 20px;
+  width: 12px;
+  height: 20px;
+  transition: opacity .15s ease;
+}
+body[data-state="morph"] #intro-arrow { opacity: 0; }
+
+/* ================= mobile (iPhone 16 frames, 393 base) ================= */
+
+@media (max-width: 700px) {
+  :root { --m: 16px; }
+
+  #wordmark { left: 16px; top: 67px; }
+
+  /* main state: big stacked nav */
+  .navitem {
+    left: 16px;
+    right: auto;
+    bottom: auto;
+    font-size: 66px;
+  }
+  #nav-manifesto { left: 16px; top: 137px; }
+  #nav-personnel { left: 16px; top: 204px; }
+  #nav-inquire   { left: 16px; top: 271px; }
+
+  /* open section: only the active title, at the top slot */
+  body.overlay .navitem { display: none; }
+  body[data-tab="manifesto"] #nav-manifesto,
+  body[data-tab="personnel"] #nav-personnel,
+  body[data-tab="inquire"]   #nav-inquire { display: block; top: 137px; opacity: 1; }
+
+  /* single full-width column, scrollable content under a fixed rule */
+  .col { display: none; }
+  body[data-tab="manifesto"] .col-manifesto,
+  body[data-tab="personnel"] .col-personnel,
+  body[data-tab="inquire"]   .col-inquire { display: block; opacity: 1; }
+  .col {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    top: 227px;
+    bottom: 0;
+    height: auto;
+    width: auto;
+    border-top: 1px solid var(--red);
+    overflow-y: auto;
+    scrollbar-width: none;
+    font-size: 14px;
+    line-height: 15px;
+  }
+  .col::-webkit-scrollbar { display: none; }
+
+  .col-label { display: none; }
+  .col-rule { display: none; }
+
+  .col-body {
+    position: static;
+    border-top: none;
+    padding: 15px 0 16px;
+  }
+
+  #email {
+    position: relative;
+    top: auto;
+    display: block;
+    width: -moz-max-content;
+    width: max-content;
+    margin-top: 10px;
+  }
+  #email .ext-arr { left: 112px; }
+
+  .ttl-d { display: none; }
+  .ttl-m { display: inline; }
+
+  #p-rows { position: static; padding-bottom: 16px; }
+  .col-personnel .p-row:first-child { border-top: none; }
+
+  .p-name { top: 10px; }
+  .p-sub { margin-left: 193.63px; padding: 10px 0 19px; }
+  .p-link { margin-top: 5px; }
+  .p-row.open .p-bio { margin-top: 1px; margin-bottom: 19px; }
+
+  .arr { width: 6px; height: 10px; background-image: url('../assets/v3/svg/arrow-down-m.svg'); }
+  .ext-arr { width: 8px; height: 8px; background-image: url('../assets/v3/svg/arrow-up-m.svg'); }
+  .p-link .ext-arr { left: 55px; }
+
+  #p-assoc { height: 140px; }
+  .assoc-label { top: 10px; }
+  .assoc-title, #p-assoc .p-link { left: 193.63px; }
+  .a-n1, .a-t1 { top: 40px; }
+  .a-l1 { top: 70px; }
+  .a-n2, .a-t2 { top: 100px; }
+  .a-l2 { top: 130px; }
+
+  #close-overlay {
+    right: 16px;
+    bottom: auto;
+    top: 137px;
+    width: 47px;
+    height: 47px;
+    background-image: url('../assets/v3/svg/x-m.svg');
+  }
+
+  #intro-arrow { bottom: 16px; }
 }
