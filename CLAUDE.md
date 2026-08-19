@@ -1,10 +1,11 @@
 # sub rosa — project context for Claude
 
-Single-page portfolio site for the sub rosa studio, built 1:1 from Figma
-(`TheStudio V1`, file key `mFJgS92aoDKCxCKYaNztju`, page "Page 3.4").
-Static site, no build step: plain HTML/CSS/ES modules at the repo root.
+Single-page portfolio site for the sub rosa studio (repo `fpomykalo/severe`,
+formerly `the-studio`), built 1:1 from Figma (`TheStudio V1`, file key
+`mFJgS92aoDKCxCKYaNztju`, page "Page 3.4"). Static site, no build step:
+plain HTML/CSS/ES modules at the repo root.
 
-- **Live site:** https://fpomykalo.github.io/the-studio/ (GitHub Pages, deploys
+- **Live site:** https://fpomykalo.github.io/severe/ (GitHub Pages, deploys
   automatically from `main` root on every push — always push finished work to
   `main`). **v2 lives at /v2.html** — a full fork kept beside v1 on the same
   branch so the initial version is never lost. Active work happens on v2;
