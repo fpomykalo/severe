@@ -123,6 +123,7 @@ $('#clock-r').textContent = '';
 
 let heroScr = null;
 document.fonts.ready.then(() => {
+  body.classList.add('boot');       // lockup transform is applied, scramblers own the text
   heroScr = scrambleSlots(heroSpans, HERO, { delay: 150, stagger: 90, dur: 650 });
   scrambleText($('#cities'), () => 'London   /   New York   /   Detroit', { delay: 250, perChar: 25, dur: 400 });
   scrambleText($('#clock-l'), () => timeIn('Europe/London'), { delay: 450, perChar: 30, dur: 350 });

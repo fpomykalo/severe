@@ -81,7 +81,9 @@ body.overlay #dim { opacity: 1; }
   font-size: 10px;
   white-space: pre;
   text-box: trim-both cap alphabetic;
+  visibility: hidden;               /* until JS has taken over (no first-paint flash) */
 }
+body.boot #cities, body.boot #clock { visibility: visible; }
 #cities { top: var(--m); }
 #clock  { top: calc(var(--m) + 12px); color: rgba(255, 0, 0, 0.3); }
 #clock-r { position: absolute; left: var(--clock2, 72px); top: 0; }
@@ -332,7 +334,9 @@ body[data-state="main"] #intro { display: none; }
   width: 1416px;
   height: 260px;
   transform-origin: 0 0;
+  visibility: hidden;               /* raw (untransformed) lockup must never paint */
 }
+body.boot #hero-lockup { visibility: visible; }
 #hero-word {
   margin: 0;
   position: absolute;
