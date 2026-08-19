@@ -137,8 +137,15 @@ const TM0 = { l: 1389.037, t: 0.55, w: 26.964 };
 const TM1 = { l: 1415.75, t: 0, w: 70.583 };
 const S_END = 36 / 363;
 
+/* mobile intro: Figma scale 0.51554 reduced 10% per user note; the ™ is hidden
+   there, so the lockup centers on the word alone (word center is 17.63 design
+   units left of the full-lockup center) */
+const MOB_S = 0.51554 * 0.9;
+const WORD_CENTER_DX = 17.63;
 function introT() {
-  if (mq.matches) return { X: innerWidth / 2 + 0.42, Y: innerHeight / 2 - 2, a: -90, s: 0.51554, ls: -3.63 };
+  if (mq.matches) {
+    return { X: innerWidth / 2 + 0.42, Y: innerHeight / 2 - 2 - WORD_CENTER_DX * MOB_S, a: -90, s: MOB_S, ls: -3.63 };
+  }
   const k = innerWidth / 1440;
   return { X: (11 + LC.x) * k, Y: (63 + LC.y) * k, a: 0, s: k, ls: -3.63 };
 }

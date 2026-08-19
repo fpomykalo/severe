@@ -457,5 +457,15 @@ body[data-state="morph"] #intro-arrow { opacity: 0; }
     background-image: url('../assets/v3/svg/x-m.svg');
   }
 
-  #intro-arrow { bottom: 16px; }
+  /* no ™ on the intro lockup — it arrives with the header wordmark */
+  #hero-tm { display: none; }
+
+  #intro-arrow { bottom: 6px; }
+}
+
+/* touch devices: taps must not leave links stuck underlined */
+@media (hover: none) {
+  .navitem:hover, .col-label:hover, .p-name:hover, .p-link:hover, #email:hover {
+    text-decoration: none;
+  }
 }
