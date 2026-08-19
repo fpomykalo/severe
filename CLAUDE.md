@@ -95,9 +95,11 @@ assets/v3/svg/     tm.svg (7×3), x.svg (26×26), x-m.svg (47×47),
   LinkedIn, email) — but hover rules are disabled under `(hover: none)` so
   taps on touch devices never leave a stuck underline.
 - **Personnel column:** rows are content-driven (no fixed pitch): name cap
-  +5 from stroke; right sub-column title (K. Kitev's "Director
-  of/Operations" is a hard 2-line break on desktop, one line on mobile —
-  .ttl-d/.ttl-m spans); LinkedIn cap = title cap + lines·14; next stroke =
+  +5 from stroke; right sub-column title (K. Kitev's "Director of
+  Operations" is ONE line everywhere — user override of Figma's 2-line
+  desktop break; at 1440 it ends ~3px short of the inquire rail, below
+  ~1400px viewport it would collide — flagged); LinkedIn cap = title cap
+  + lines·14; next stroke =
   LinkedIn cap + 28. Accordion (one open): bio cap = LinkedIn cap + 29,
   next stroke = bio bottom + 19.42. Permanent Associates (static): label
   +5, entries +34/+91, links +62/+119, height 128. LinkedIn ↗ 7×7 at
