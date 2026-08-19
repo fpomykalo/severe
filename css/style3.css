@@ -133,6 +133,9 @@ body[data-tab="manifesto"] #nav-manifesto { opacity: 1; }
 body[data-tab="personnel"] #nav-personnel { opacity: 1; }
 body[data-tab="inquire"]   #nav-inquire   { opacity: 1; }
 
+/* mobile-only drag hint (iPhone 16 - 8): icon 11x11 at 16/827, text at 32/829 */
+#drag-hint { display: none; }
+
 /* ---------- overlay dropdowns ---------- */
 
 #overlay { display: none; position: fixed; inset: 0; z-index: 10; }
@@ -455,6 +458,26 @@ body[data-state="morph"] #intro-arrow { opacity: 0; }
     width: 47px;
     height: 47px;
     background-image: url('../assets/v3/svg/x-m.svg');
+  }
+
+  #drag-hint {
+    display: block;
+    position: fixed;
+    left: 16px;
+    bottom: 14px;
+    z-index: 20;
+    visibility: hidden;
+  }
+  body[data-state="main"] #drag-hint { visibility: visible; }
+  body.overlay #drag-hint { visibility: hidden; }
+  #drag-hint img { display: block; width: 11px; height: 11px; }
+  #drag-hint span {
+    position: absolute;
+    left: 16px;
+    top: 2px;
+    font-size: 10px;
+    white-space: pre;
+    text-box: trim-both cap alphabetic;
   }
 
   /* no ™ on the intro lockup — it arrives with the header wordmark */
