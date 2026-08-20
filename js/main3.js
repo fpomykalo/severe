@@ -104,9 +104,21 @@ function tickClock() {
 }
 setInterval(tickClock, 250);
 
+/* WebKit resolves document.fonts.ready only near full page load, which on
+   mobile left the hero waiting behind the background-image downloads. Load
+   the two faces directly instead — resolves the moment the woff2s are in —
+   with a 3s safety net so the intro can never stay blank. */
+const fontsReady = Promise.race([
+  Promise.all([
+    document.fonts.load('700 363px HaasDisp'),
+    document.fonts.load('500 12px HaasDisp'),
+  ]).catch(() => {}),
+  new Promise((res) => setTimeout(res, 3000)),
+]);
+
 /* second clock column starts where it does in Figma: after "22:04.37" + 20 spaces
    (measured at 12px for desktop, 10px for mobile) */
-document.fonts.ready.then(() => {
+fontsReady.then(() => {
   const ctx = document.createElement('canvas').getContext('2d');
   const PRE = '22:04.37                    ';
   ctx.font = '500 12px HaasDisp';
@@ -132,7 +144,7 @@ $('#clock-l').textContent = '';
 $('#clock-r').textContent = '';
 
 let heroScr = null;
-document.fonts.ready.then(() => {
+fontsReady.then(() => {
   body.classList.add('boot');       // lockup transform is applied, scramblers own the text
   heroScr = scrambleSlots(heroSpans, HERO, { delay: 150, stagger: 90, dur: 650 });
   scrambleText($('#cities'), () => 'London   /   New York   /   Detroit', { delay: 250, perChar: 25, dur: 400 });
@@ -254,7 +266,11 @@ function preload(i, stride) {
   im.decode().then(() => { loaded.push(im); bgImg.dataset.pool = String(loaded.length); preload(i + stride, stride); },
                    () => preload(i + stride, stride));
 }
-for (let s = 0; s < 4; s++) preload(s, 4);
+/* start only once the intro is on screen — the pool must never compete with
+   the fonts for bandwidth (images aren't needed until after the morph) */
+fontsReady.then(() => {
+  for (let s = 0; s < 4; s++) preload(s, 4);
+});
 
 let bgIdx = -1;
 let lastSwap = 0;
