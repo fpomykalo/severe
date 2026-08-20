@@ -1,0 +1,21 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SEVERE — brand video render surface</title>
+<style>
+  @font-face {
+    font-family: 'HaasDisp';
+    src: url('../../assets/v3/fonts/HaasGrotDisp-65Medium.woff2') format('woff2');
+    font-weight: 500; font-style: normal; font-display: block;
+  }
+  @font-face {
+    font-family: 'HaasDisp';
+    src: url('../../assets/v3/fonts/HaasGrotDisp-75Bold.woff2') format('woff2');
+    font-weight: 700; font-style: normal; font-display: block;
+  }
+  html, body { margin: 0; background: #000; }
+  canvas { display: block; }
+  #src { display: none; }
+</style>
+<canvas id="out" width="1920" height="1440"></canvas>
+<canvas id="src" width="1920" height="1440"></canvas>
+<script type="module" src="./scene.js"></script>
