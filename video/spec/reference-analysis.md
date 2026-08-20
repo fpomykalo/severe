@@ -1,0 +1,85 @@
+# SEVERE brand video — reference analysis
+
+Derived measurements only. No third-party reference footage or frames are
+stored in this repo; these are numbers extracted from refs the user supplied
+privately in conversation.
+
+## Master format
+
+- 1920 × 1440, 4:3, 24 fps, no audio.
+- Safe areas (measured from the user's guide artboard, `03 - Artboard 13`):
+  - 9:16 vertical  = centre **810 px** wide (x 555–1365) = 42.19% of width
+  - 16:9 crop      = centre **1080 px** tall (y 180–1260) = 75% of height
+  - both-safe intersection = **810 × 1080** centred
+- Wordmark, city block and the "Come to us…" line stay inside 810×1080.
+  Big letterform crops (S, SEV, ER) deliberately bleed past the frame.
+
+## Copy (verbatim, locked)
+
+    Come to us when nice stops working.
+    London   /   New York   /   Detroit
+    Deployed — Globally
+
+## Cadence — the key finding
+
+Effective (unique-frame) rates, measured by frame-differencing:
+
+| ref            | source | unique frames | mean hold | effective |
+|----------------|--------|---------------|-----------|-----------|
+| TENDU (SR1)    | 60 fps | 112 / 227     | 2.03      | **29.6 fps** |
+| SR2            | 60 fps |  42 / 194     | 4.62      | **13.0 fps** |
+| Cosmos         | 24 fps |  50 / 105     | 2.10      | **11.4 fps** |
+| BEAMS          | 30 fps | 119 / 120     | 1.01      | **29.8 fps** |
+
+Typographic glitch runs **stepped at 11–13 fps** (on 2s), analog/VHS texture
+runs **full rate**. Implement as two separate clocks:
+- type + geometry: quantise t to 12 fps
+- grain, static, chroma: regenerate every frame at 24 fps
+
+## Tear / displacement (TENDU, 1422 px wide)
+
+Per-row horizontal shift vs. a sharp reference frame, 1-D phase correlation:
+
+- median row shift  **55 px = 3.9% of width**
+- p95               **521 px = 36.6%**
+- peak              **568 px = 39.9%**
+
+Heavy-tailed: most rows barely move, a few contiguous bands displace enormously.
+This is **block tearing, not a smooth wave**. Dominant vertical periods in the
+displacement field: 1, 9 and 11 cycles over 792 rows → one full-frame split plus
+bands ~**70–90 px tall**.
+
+## Black flash rhythm (TENDU)
+
+Black-frame runs at 60 fps source: 1,3,2,2,3,3,2,3,2,2,3,3,3
+→ 13 flashes in 3.78 s = **one every ~0.29 s**, each **1–2 frames at 24 fps**.
+
+## Grain (high-pass sigma, 0–255)
+
+- TENDU  **2.70**  (subtle)
+- BEAMS  **13.36** (heavy analog)
+- Cosmos **0.57**  (essentially clean — its glitch is pure geometry)
+
+Grain in this project comes from the still refs, not the motion refs.
+
+## Colour
+
+- Cosmos field measured **#F02010 / #E82008** — a warm red, NOT #FF0000.
+  SEVERE uses **#FF0000 on #000**; do not drift toward the warm red.
+- BEAMS global per-channel horizontal offset measured **0 px** — its blue
+  fringing is **edge-local**, not a whole-frame RGB split. Chroma leak must be
+  applied at high-contrast edges, weighted by local gradient, not as a global
+  channel translate.
+
+## Plates
+
+Both B/W, tinted by **multiply with #FF0000** → `R = luma, G = 0, B = 0`.
+Verified this reproduces storyboard boards 3/13 exactly. Consequence: plate
+luma maps directly to red intensity, so plates need bright near-white fields
+and deep near-black subjects.
+
+## Source
+
+`SEVERE__Storyboard.ai` — PDF-1.6, 23 pages: 22 boards at MediaBox 400×300
+(4:3 exact) + one 2642×2144 guides artboard. Font: HaasGrotDisp-65Medium,
+same family already in `assets/v3/fonts/`.
