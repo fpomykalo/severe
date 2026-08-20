@@ -74,9 +74,24 @@ Grain in this project comes from the still refs, not the motion refs.
 ## Plates
 
 Both B/W, tinted by **multiply with #FF0000** → `R = luma, G = 0, B = 0`.
-Verified this reproduces storyboard boards 3/13 exactly. Consequence: plate
-luma maps directly to red intensity, so plates need bright near-white fields
-and deep near-black subjects.
+Verified this reproduces storyboard boards 3/13 exactly.
+
+Generation spec (revised — an earlier draft of this file asked for crushed
+blacks and blown highlights, which was wrong):
+
+- **Flat and unclipped.** Nothing at 0 or 255. Clipped regions are destroyed
+  information; a flat plate can be expanded, lifted or crushed in post, and
+  lets the eye plate, the tree plate and the pure-CG type boards share one
+  black level. All grading happens here, not in the generator.
+- **Maximum resolution / quality.** Expanding a flat image amplifies banding
+  in smooth grey areas.
+- **Heavy optical defocus, generated — not added in post.** A real lens blooms
+  a highlight into a bright disc; a Gaussian blur of a sharp frame averages it
+  into grey. Blur in post is for fine adjustment only, and must run in linear
+  light so highlights bloom rather than dull. Defocus also suppresses the
+  uncanny-iris failure mode in generated macro eyes.
+- **Minimal native grain.** Grain is applied last, after all blur — blurring a
+  grainy plate destroys the grain and it has to be re-added anyway.
 
 ## Source
 
