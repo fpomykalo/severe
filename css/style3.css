@@ -235,7 +235,7 @@ body[data-tab="inquire"]   .col-inquire   .col-label .arr { display: inline-bloc
   text-box: trim-both cap alphabetic;
 }
 #email:hover { text-decoration: underline; }
-#email .ext-arr { left: 97px; }
+#email .ext-arr { left: 104.5px; }
 
 /* ---------- personnel rows ---------- */
 
@@ -445,7 +445,7 @@ body[data-state="morph"] #intro-arrow { opacity: 0; }
     width: max-content;
     margin-top: 10px;
   }
-  #email .ext-arr { left: 112px; }
+  #email .ext-arr { left: 121.5px; }
 
   #p-rows { position: static; padding-bottom: 16px; }
   .col-personnel .p-row:first-child { border-top: none; }

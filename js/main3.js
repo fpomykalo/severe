@@ -115,6 +115,9 @@ document.fonts.ready.then(() => {
   document.documentElement.style.setProperty('--clock2-m', ctx.measureText(PRE).width + 'px');
 });
 
+/* mailto assembled at runtime so the plain address never sits in the HTML */
+$('#email').href = 'mailto:' + 'info' + '@' + 'severe.work';
+
 /* the image pool stays background-only: no context menu, no drag-out */
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 document.addEventListener('dragstart', (e) => { if (e.target.closest('img, #bg')) e.preventDefault(); });
