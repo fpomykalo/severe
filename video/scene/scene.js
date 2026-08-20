@@ -136,6 +136,119 @@ function hugeGlyph(ch, px, x, y, color = RED, rot = 0) {
   ctx.restore();
 }
 
+
+// ---------------------------------------------------------------- layout
+//
+// Every coordinate below is lifted straight from SEVERE__Storyboard.ai, whose
+// boards are 400x300pt. PT converts board points to master pixels.
+
+const PT = 1920 / 400;                 // 4.8
+const BODY = 5.82 * PT;                // 27.9px — the storyboard's body size
+const PITCH = 6.98 * PT;               // 33.5px — its line pitch
+
+function label(text, xPt, yPt, { color = RED, size = BODY, dir = 0 } = {}) {
+  ctx.save();
+  ctx.translate(xPt * PT, yPt * PT);
+  if (dir) ctx.rotate(dir);
+  setType(size, 500);
+  ctx.fillStyle = color;
+  ctx.textAlign = dir ? 'center' : 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(text, 0, 0);
+  ctx.restore();
+}
+
+const cityStack = (xPt, yPt) => {
+  ['London', 'New York', 'Detroit'].forEach((c, i) =>
+    label(c, xPt, yPt + i * 6.98));
+};
+
+// The three blocks of copy, placed exactly where the .ai puts them. Boards
+// 10-13 share this field; `full` adds the pair the denser boards carry.
+function typeField(full) {
+  label(COPY.line,   258.83, 208.96);
+  label(COPY.cities, 270.27,  78.47);
+  label(COPY.deploy, 244.20,  85.45);
+  label(COPY.cities, 239.49, 244.14);
+  label(COPY.deploy, 273.25, 251.28);
+  label(COPY.cities,   7.78, 180.08, { dir: -Math.PI / 2 });
+  label(COPY.deploy,  14.76, 237.44, { dir: -Math.PI / 2 });
+  label(COPY.line,     8.86,  27.05, { dir: -Math.PI / 2 });
+  if (full) label(COPY.line, 244.19, 41.43);
+  dot(264.5 * PT, 80.6 * PT);
+  dot(234.0 * PT, 246.3 * PT);
+}
+
+// Record / pause / fast-forward, as they sit under the S on board 20.
+function transportMarks(x, y, h) {
+  ctx.save();
+  ctx.fillStyle = RED;
+  ctx.beginPath(); ctx.arc(x + h * 0.4, y + h * 0.5, h * 0.4, 0, Math.PI * 2); ctx.fill();
+  const px = x + h * 1.6;
+  ctx.fillRect(px, y, h * 0.26, h);
+  ctx.fillRect(px + h * 0.45, y, h * 0.26, h);
+  const fx = x + h * 3.0;
+  for (const o of [0, h * 0.62]) {
+    ctx.beginPath();
+    ctx.moveTo(fx + o, y); ctx.lineTo(fx + o + h * 0.55, y + h * 0.5); ctx.lineTo(fx + o, y + h);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// Horizontal lockup, specified by cap height and centre — the way the .ai
+// measures it (board 16: 141.7px cap centred at 969,719).
+function wordmark(cx, capMidY, capPx, color = RED, tm = true) {
+  const px = capPx / 0.715;
+  setType(px, 700);
+  const w = ctx.measureText('SEVERE').width;
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  const x0 = cx - w / 2, base = capMidY + capPx / 2;
+  ctx.fillText('SEVERE', x0, base);
+  if (tm) {
+    setType(px * 0.22, 700);
+    ctx.fillText('™', x0 + w + px * 0.03, base - capPx * 0.80);
+  }
+  ctx.restore();
+}
+
+// Boards 9 and 10 are the same lockup at two scroll positions. ctx.rotate(+90)
+// makes the word read top-to-bottom with each glyph's spine turned to the top,
+// which is what the .ai shows.
+function hugeVertical(cx, wordTopY, capPx, color = RED) {
+  const px = capPx / 0.715;
+  ctx.save();
+  ctx.translate(cx, wordTopY);
+  ctx.rotate(Math.PI / 2);
+  setType(px, 700);
+  ctx.fillStyle = color;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('SEVERE', 0, 0);
+  ctx.restore();
+}
+
+// A glyph placed by its cap box, so the huge crops land where the .ai has them.
+function glyphAtCap(ch, fontPx, cx, capTopPx, color = RED, rot = 0) {
+  ctx.save();
+  ctx.translate(cx, capTopPx + fontPx * 0.715);
+  if (rot) ctx.rotate(rot);
+  setType(fontPx, 700);
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(ch, 0, 0);
+  ctx.restore();
+}
+
+// Trees run slower than life: the plate is real-time wind, played at 0.55x so
+// the sway reads as the heavy, underwater movement the brief asks for.
+const TREE_RATE = 0.55;
+const treeFrame = (tb, offset) => Math.round((offset + tb * TREE_RATE) * FPS) + 1;
+
 // ---------------------------------------------------------------- timeline
 //
 // Boards are the storyboard frames, read row-major. Times in seconds at 24fps.
@@ -165,11 +278,15 @@ const BLINKS = [
 ];
 const dotOn = (t) => BLINKS.some(([a, b]) => t >= a && t < b);
 
-// 1–2 frame black flashes at the TENDU rhythm (~one every 0.29s when active).
+// Black flashes at the TENDU rhythm: the reference throws one roughly every
+// 0.29s, each lasting 1-2 frames at 24. The slot picks whether a flash happens;
+// only the first frame or two inside that slot actually go black.
 function blackFlash(t, rate) {
   if (rate <= 0) return false;
   const slot = Math.floor(t / 0.29);
-  return hash11(slot * 17.3) < rate;
+  if (hash11(slot * 17.3) >= rate) return false;
+  const frameInSlot = Math.floor((t - slot * 0.29) * FPS);
+  return frameInSlot < (hash11(slot * 23.1) < 0.5 ? 1 : 2);
 }
 
 const BOARDS = [
@@ -239,6 +356,201 @@ const BOARDS = [
       // a detail of the letter, not the letter: the frame crops into the bowl
       hugeGlyph('S', 4200, W * 0.46 + drift, H * 0.92, RED);
     },
+  },
+  { // 6 — back to black, the marker alone
+    id: 6, start: 8.2, end: 8.9,
+    fx: (u, t) => ({ grain: 0.17, static: 0.13, tear: 0, chroma: 0, flash: 0,
+                     blur: blurPulse(t, 1.1, 0.4, 4.0) }),
+    async draw() { label('S.', 177.40, 139.34); },
+  },
+  { // 7 — the cities arrive next to it
+    id: 7, start: 8.9, end: 10.1,
+    fx: (u, t) => ({ grain: 0.17, static: 0.14, chroma: 0,
+                     tear: blurPulse(t, 0.7, 0.14, 0.30), flash: u < 0.1 ? 0.3 : 0,
+                     blur: blurPulse(t, 1.2, 0.36, 5.0) }),
+    async draw() { label('S.', 177.40, 139.34); cityStack(197.27, 139.34); },
+  },
+  { // 8 — the radial composition: Deployed / Globally on 45deg steps
+    id: 8, start: 10.1, end: 11.6,
+    fx: (u, t) => ({ grain: 0.18, static: 0.16, chroma: 0,
+                     tear: blurPulse(t, 0.6, 0.13, 0.35), flash: 0.08,
+                     blur: blurPulse(t, 0.95, 0.32, 6.0) }),
+    async draw(u, t) {
+      label('S.', 177.40, 139.34); cityStack(197.27, 139.34);
+      const step = Math.floor(t * STEP_FPS);
+      for (let i = 0; i < 8; i++) {
+        if (hash11(i * 5.7 + step * 1.9) < 0.12) continue;   // some flick out
+        const a = i * Math.PI / 4;
+        const r = 58 + 6 * Math.sin(step * 0.7 + i);
+        label(i % 2 ? 'Globally' : 'Deployed',
+              200 + Math.cos(a) * r, 150 + Math.sin(a) * r, { dir: a });
+      }
+    },
+  },
+  { // 9 — SEV: the vertical lockup blown up and rotated 180deg, cropped
+    id: 9, start: 11.6, end: 12.4,
+    fx: (u, t) => ({ grain: 0.19, static: 0.12, chroma: 0,
+                     tear: 0.25 + 0.5 * blurPulse(t, 0.45, 0.3, 1.0), flash: 0.18,
+                     blur: blurPulse(t, 0.6, 0.3, 8.0) }),
+    async draw(u, t) {
+      const drift = (hash11(Math.floor(t * STEP_FPS) * 3.3) - 0.5) * 30;
+      hugeVertical(711 + drift, -300, 845);          // S / E / V
+    },
+  },
+  { // 10 — ER, with the copy stacked around it
+    id: 10, start: 12.4, end: 13.3,
+    fx: (u, t) => ({ grain: 0.19, static: 0.14, chroma: 0,
+                     tear: 0.20 + 0.5 * blurPulse(t, 0.4, 0.28, 1.0), flash: 0.18,
+                     blur: blurPulse(t, 0.66, 0.3, 8.0) }),
+    async draw(u, t) {
+      const drift = (hash11(Math.floor(t * STEP_FPS) * 6.1) - 0.5) * 26;
+      hugeVertical(870 + drift, -2700, 845);         // ...scrolled on to E / R
+      typeField(true);
+    },
+  },
+  { // 11 — the type field alone
+    id: 11, start: 13.3, end: 14.4,
+    fx: (u, t) => ({ grain: 0.17, static: 0.15, chroma: 0,
+                     tear: blurPulse(t, 0.55, 0.14, 0.32), flash: 0.10,
+                     blur: blurPulse(t, 1.15, 0.35, 5.0) }),
+    async draw() { typeField(false); },
+  },
+  { // 12 — the trees, black and white
+    id: 12, start: 14.4, end: 16.2,
+    fx: (u, t) => ({ grain: 0.19, static: u < 0.15 ? 0.5 : 0.13, chroma: 0,
+                     tear: u < 0.15 ? 0.7 : blurPulse(t, 0.8, 0.14, 0.28),
+                     flash: u < 0.12 ? 0.4 : 0.05,
+                     blur: blurPulse(t, 1.0, 0.34, 9.0) }),
+    async draw(u, t, tb) {
+      drawPlate(await loadPlate('trees', treeFrame(tb, 0.4)), 1.03, 0, 0, 0.9);
+      typeField(false);
+    },
+  },
+  { // 13 — the same trees, red
+    id: 13, start: 16.2, end: 17.8,
+    fx: (u, t) => ({ grain: 0.19, static: 0.14, chroma: 0,
+                     tear: blurPulse(t, 0.72, 0.14, 0.30), flash: 0.06,
+                     blur: blurPulse(t, 1.05, 0.34, 9.0) }),
+    async draw(u, t, tb) {
+      drawPlate(await loadPlate('trees', treeFrame(tb, 1.39)), 1.03, 0, 0, 0.9);
+      tintRed();
+      typeField(false);
+    },
+  },
+  { // 14 — five white lockups down the 9:16 column
+    id: 14, start: 17.8, end: 19.4,
+    fx: (u, t) => ({ grain: 0.19, static: 0.15, chroma: 0,
+                     tear: blurPulse(t, 0.62, 0.16, 0.34), flash: 0.10,
+                     blur: blurPulse(t, 0.88, 0.3, 8.0) }),
+    async draw(u, t, tb) {
+      drawPlate(await loadPlate('trees', treeFrame(tb, 2.27)), 1.03, 0, 0, 0.9);
+      tintRed();
+      const step = Math.floor(t * STEP_FPS);
+      for (let i = 0; i < 5; i++) {
+        if (hash11(i * 9.1 + step * 2.3) < 0.10) continue;
+        wordmark(SAFE_V.x + SAFE_V.w / 2, 46 + i * 311, 110, '#fff');
+      }
+      dot(SAFE_V.x + 8, 118, '#fff');
+      transportMarks(SAFE_V.x + SAFE_V.w - 96, 108, 22);
+    },
+  },
+  { // 15 — back to black and white, the stack alternating red and white
+    id: 15, start: 19.4, end: 20.8,
+    fx: (u, t) => ({ grain: 0.19, static: 0.16, chroma: 0,
+                     tear: blurPulse(t, 0.58, 0.16, 0.36), flash: 0.12,
+                     blur: blurPulse(t, 0.92, 0.3, 8.0) }),
+    async draw(u, t, tb) {
+      drawPlate(await loadPlate('trees', treeFrame(tb, 3.15)), 1.03, 0, 0, 0.9);
+      const step = Math.floor(t * STEP_FPS);
+      for (let i = 0; i < 5; i++) {
+        if (hash11(i * 4.3 + step * 3.1) < 0.10) continue;
+        wordmark(SAFE_V.x + SAFE_V.w / 2, 46 + i * 311, 110, i % 2 ? RED : '#fff');
+      }
+      label(COPY.cities, 161.33, 135.97);
+      label(COPY.deploy, 174.04, 142.95);
+      label(COPY.line,   153.61, 156.91);
+    },
+  },
+  { // 16 — the reveal. Cosmos treatment: the lockup multiplies, offsets and
+    //      shreds on the 12fps step, over black.
+    id: 16, start: 20.8, end: 22.8,
+    fx: (u, t) => ({ grain: 0.18, static: 0.10 + 0.10 * (1 - u), chroma: 0,
+                     tear: u < 0.55 ? 0.45 * (1 - u / 0.55) : 0.04,
+                     flash: u < 0.4 ? 0.35 : 0.04,
+                     blur: blurPulse(t, 1.25, 0.3, 6.0) }),
+    async draw(u, t) {
+      const step = Math.floor(t * STEP_FPS);
+      const copies = u < 0.5 ? 1 + Math.floor(hash11(step * 7.7) * 3) : 1;
+      for (let i = 0; i < copies; i++) {
+        const off = i === 0 ? 0 : (hash11(step * 3.9 + i * 2.1) - 0.5) * 420;
+        const sx  = i === 0 ? 0 : (hash11(step * 5.1 + i * 1.3) - 0.5) * 160;
+        wordmark(969 + sx, 719 + off, 141.7);
+      }
+    },
+  },
+  { // 17 — the copy starts building around it
+    id: 17, start: 22.8, end: 24.0,
+    fx: (u, t) => ({ grain: 0.17, static: 0.11, chroma: 0,
+                     tear: blurPulse(t, 0.85, 0.12, 0.22), flash: 0.05,
+                     blur: blurPulse(t, 1.3, 0.32, 5.0) }),
+    async draw() {
+      wordmark(969, 719, 141.7);
+      label(COPY.line,   179.46, 209.65);
+      label(COPY.cities, 148.49,  79.16);
+      label(COPY.deploy, 122.41,  86.14);
+      dot(143.0 * PT, 81.3 * PT);
+    },
+  },
+  { // 18 — and completes
+    id: 18, start: 24.0, end: 25.4,
+    fx: (u, t) => ({ grain: 0.17, static: 0.11, chroma: 0,
+                     tear: blurPulse(t, 0.8, 0.12, 0.24), flash: 0.05,
+                     blur: blurPulse(t, 1.35, 0.32, 5.0) }),
+    async draw() {
+      wordmark(969, 719, 141.7);
+      label(COPY.line,   179.46, 209.65);
+      label(COPY.cities, 148.49,  79.16);
+      label(COPY.deploy, 122.41,  86.14);
+      label(COPY.cities, 187.43, 244.84);
+      label(COPY.deploy, 221.20, 251.97);
+      label(COPY.line,   122.41,  42.13);
+      dot(143.0 * PT, 81.3 * PT);
+      dot(182.0 * PT, 247.0 * PT);
+    },
+  },
+  { // 19 — the black beat
+    id: 19, start: 25.4, end: 26.0,
+    fx: () => ({ grain: 0.14, static: 0.07, tear: 0, chroma: 0, flash: 0, blur: 0 }),
+    async draw() {},
+  },
+  { // 20 — the big S with its trademark, and the transport marks
+    id: 20, start: 26.0, end: 28.6,
+    fx: (u, t) => ({ grain: 0.19, static: 0.10 + 0.20 * u, chroma: 0,
+                     tear: u < 0.10 ? 0.7 : 0.06 + 0.5 * u * u
+                           + blurPulse(t, 0.5, 0.15, 0.35),
+                     flash: u < 0.1 ? 0.4 : 0.06 + 0.14 * u,
+                     blur: blurPulse(t, 0.82, 0.3, 11.0) }),
+    async draw(u, t) {
+      const drift = (hash11(Math.floor(t * STEP_FPS) * 2.7) - 0.5) * 22;
+      glyphAtCap('S', 1501, 959 + drift, 719 - 1073 / 2);
+      setType(1501 * 0.115, 700);
+      ctx.fillStyle = RED; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.fillText('™', 1310 + drift, 268);
+      transportMarks(576 + drift, 1224, 26);
+    },
+  },
+  { // 21 — the lockup, small
+    id: 21, start: 28.6, end: 30.0,
+    fx: (u, t) => ({ grain: 0.16, static: 0.09, chroma: 0,
+                     tear: u < 0.08 ? 0.5 : 0, flash: u < 0.08 ? 0.3 : 0,
+                     blur: blurPulse(t, 1.4, 0.3, 4.0) }),
+    async draw() { wordmark(964, 719, 38); },
+  },
+  { // 22 — out
+    id: 22, start: 30.0, end: 31.0,
+    fx: (u) => ({ grain: 0.13 * (1 - u), static: 0.05 * (1 - u),
+                  tear: 0, chroma: 0, flash: 0, blur: 0 }),
+    async draw() {},
   },
 ];
 
