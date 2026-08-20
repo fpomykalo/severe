@@ -292,7 +292,8 @@ function blackFlash(t, rate) {
 const BOARDS = [
   { // 1 — black, the dot starts blinking
     id: 1, start: 0.0, end: 3.0,
-    fx: (u, t) => ({ grain: 0.17, static: 0.11, tear: 0, chroma: 0, flash: 0,
+    fx: (u, t) => ({ grain: 0.17, static: 0.11, comb: 0.06, warp: 0.030,
+                     tear: 0, drag: 0, flash: 0,
                      blur: blurPulse(t, 1.30, 0.42, 5.0) }),
     async draw(u, t) {
       if (dotOn(t)) dot(W / 2, H / 2);
@@ -300,14 +301,19 @@ const BOARDS = [
   },
   { // 2 — distortion, then the eye. Black and white, the dot still on it.
     id: 2, start: 3.0, end: 5.0,
-    fx: (u, t) => ({
-      grain:  0.19,
-      static: u < 0.28 ? 0.75 * (1 - u / 0.28) + 0.13 : 0.13,
-      tear:   u < 0.28 ? 0.90 * (1 - u / 0.28) : 0.10 + blurPulse(t, 0.83, 0.18, 0.35),
-      chroma: 0,
-      flash:  u < 0.22 ? 0.5 : 0,
-      blur:   blurPulse(t, 0.91, 0.34, 9.0),
-    }),
+    fx: (u, t) => {
+      const enter = Math.max(0, 1 - u / 0.28);
+      return {
+        grain:  0.19,
+        static: 0.13 + 0.62 * enter,
+        comb:   0.07 + 0.06 * enter,
+        warp:   0.052 + 0.055 * enter + blurPulse(t, 1.7, 0.3, 0.030),
+        drag:   26 + 96 * enter + blurPulse(t, 0.83, 0.18, 60),
+        tear:   0.55 * enter,
+        flash:  u < 0.22 ? 0.5 : 0,
+        blur:   blurPulse(t, 0.91, 0.34, 9.0),
+      };
+    },
     async draw(u, t, tb) {
       const img = await loadPlate('eye', Math.round(tb * FPS) + 1);
       drawPlate(img, 1.02, 0, 0, 0.82);
@@ -318,9 +324,10 @@ const BOARDS = [
     id: 3, start: 5.0, end: 5.4,
     // The lockup is only up for well under half a second, so the tear punches
     // it in and out and leaves the middle clean enough to actually read.
-    fx: (u) => ({ grain: 0.20, static: 0.26, chroma: 0, blur: 0,
-                  tear:  u < 0.22 ? 0.75 : (u > 0.78 ? 0.75 : 0.0),
-                  flash: u < 0.15 ? 0.35 : 0 }),
+    fx: (u, t) => ({ grain: 0.20, static: 0.26, comb: 0.09, blur: 0,
+                     warp: 0.070, drag: 30 + blurPulse(t, 0.31, 0.3, 90),
+                     tear:  u < 0.22 ? 0.6 : (u > 0.78 ? 0.6 : 0.0),
+                     flash: u < 0.15 ? 0.35 : 0 }),
     async draw(u, t, tb) {
       const img = await loadPlate('eye', Math.round((2.0 + tb) * FPS) + 1);
       drawPlate(img, 1.02, 0, 0, 0.86);
@@ -330,8 +337,10 @@ const BOARDS = [
   },
   { // 4 — red eye, the dot now white
     id: 4, start: 5.4, end: 6.6,
-    fx: (u, t) => ({ grain: 0.18, static: 0.14, chroma: 0,
-                     tear: u > 0.8 ? 0.55 : 0.08 + blurPulse(t, 0.66, 0.15, 0.30),
+    fx: (u, t) => ({ grain: 0.18, static: 0.14, comb: 0.07,
+                     warp: 0.050 + blurPulse(t, 1.5, 0.34, 0.045),
+                     drag: 22 + blurPulse(t, 0.66, 0.15, 72),
+                     tear: u > 0.8 ? 0.45 : 0,
                      flash: u > 0.85 ? 0.4 : 0,
                      blur: blurPulse(t, 1.05, 0.38, 11.0) }),
     async draw(u, t, tb) {
@@ -345,9 +354,10 @@ const BOARDS = [
     id: 5, start: 6.6, end: 8.2,
     // The S holds for 1.6s, so the tear escalates through it rather than only
     // punching the ends.
-    fx: (u, t) => ({ grain: 0.19, static: 0.10 + 0.22 * u, chroma: 0,
-                     tear: u < 0.12 ? 0.75 : 0.10 + 0.55 * u * u
-                           + blurPulse(t, 0.54, 0.16, 0.40),
+    fx: (u, t) => ({ grain: 0.19, static: 0.10 + 0.22 * u, comb: 0.08,
+                     warp: 0.055 + 0.055 * u * u + blurPulse(t, 1.1, 0.3, 0.040),
+                     drag: 30 + 55 * u + blurPulse(t, 0.54, 0.16, 110),
+                     tear: u < 0.12 ? 0.5 : 0.10 * u,
                      flash: u < 0.1 ? 0.45 : 0.10 * u,
                      blur: blurPulse(t, 0.77, 0.30, 13.0) }),
     async draw(u, t) {
@@ -579,43 +589,41 @@ const FRAG = `#version 300 es
 precision highp float;
 uniform sampler2D uSrc;
 uniform vec2  uRes;
-uniform float uFrame, uStep, uTear, uChroma, uGrain, uStatic, uBlur;
+uniform float uFrame, uStep, uTear, uWarp, uDrag, uComb, uGrain, uStatic, uBlur;
 out vec4 fragColor;
 
 float hash11(float p){ p=fract(p*0.1031); p*=p+33.33; p*=p+p; return fract(p); }
 float hash21(vec2 p){ vec3 q=fract(vec3(p.xyx)*0.1031); q+=dot(q,q.yzx+33.33); return fract((q.x+q.y)*q.z); }
 vec3  tex(vec2 uv){ return texture(uSrc, clamp(uv, 0.0, 1.0)).rgb; }
-float sig(vec2 uv){ vec3 c=tex(uv); return max(max(c.r,c.g),c.b); }
 float luma(vec3 c){ return dot(c, vec3(0.2126,0.7152,0.0722)); }
 
-// Block tearing. Measured on TENDU: median row shift 3.9% of width, p95 36.6%,
-// peak 39.9% — heavy-tailed, so pow(r,6) rather than anything symmetric. Bands
-// are 70-90px tall, the dominant vertical period in the displacement field.
-vec2 tearUV(vec2 uv){
-  if(uTear <= 0.0) return uv;
-  float bandH = mix(70.0, 90.0, hash11(uStep*3.7));
-  float band  = floor(uv.y*uRes.y / bandH);
-  float r     = hash11(band*7.13 + uStep*11.7);
-  float sgn   = hash11(band*3.1 + uStep*5.3) < 0.5 ? -1.0 : 1.0;
-  float off   = sgn * pow(r, 6.0) * 0.40 * uTear;
-  // plus the occasional full-frame split, also present in the reference
-  if(hash11(uStep*2.9) < 0.25*uTear && uv.y > hash11(uStep*6.1))
-    off += (hash11(uStep*8.7) - 0.5) * 0.5 * uTear;
-  return vec2(uv.x + off, uv.y);
+// Serpentine tape warp. Traced off TENDU frame 0009: a stripe wanders +/-142px
+// on a 1422px frame (rms 70px), and a single sine explains only 36% of that —
+// it is several octaves summed. The measured periods, 617 / 308 / 206 / 103px
+// on a 792px frame, scale to roughly frame-height / 3 / 6 here.
+float warp(float y, float t){
+  float w = sin(y * 6.2831 / 1440.0 + t * 0.70)
+     + 0.45 * sin(y * 6.2831 /  480.0 + t * 1.30 + 1.7)
+     + 0.22 * sin(y * 6.2831 /  240.0 + t * 2.10 + 3.1)
+     + 0.10 * sin(y * 6.2831 /  120.0 + t * 3.30 + 5.2);
+  return w / 1.77;
 }
 
-// Defocus. Golden-angle disc sampling, so 14 taps spread evenly with no
-// visible rosette. Grain lands after this pass: every pulse of blur makes the
-// grain read harder against the softened image.
-vec3 defocus(vec2 uv, float r){
-  if(r <= 0.5) return tex(uv);
+// Directional drag plus defocus in one pass. A trailing smear is approximated
+// as a disc offset half its length and stretched along x, which costs one loop
+// instead of two and is indistinguishable at these radii.
+vec3 softSample(vec2 uv, float dragPx, float blurPx){
+  float rx = blurPx + abs(dragPx) * 0.5;
+  float ry = blurPx;
+  if(rx < 0.6 && ry < 0.6) return tex(uv);
+  vec2 centre = uv + vec2(dragPx * 0.5 / uRes.x, 0.0);
   vec3 acc = vec3(0.0);
   const int N = 14;
   for(int i = 0; i < N; i++){
     float fi  = float(i);
     float ang = fi * 2.39996323;
-    float rad = sqrt((fi + 0.5) / float(N)) * r;
-    acc += tex(uv + vec2(cos(ang), sin(ang)) * rad / uRes);
+    float rad = sqrt((fi + 0.5) / float(N));
+    acc += tex(centre + vec2(cos(ang) * rad * rx, sin(ang) * rad * ry) / uRes);
   }
   return acc / float(N);
 }
@@ -623,24 +631,29 @@ vec3 defocus(vec2 uv, float r){
 void main(){
   vec2 uv = gl_FragCoord.xy / uRes;
   uv.y = 1.0 - uv.y;
-  uv = tearUV(uv);
+  float y = (1.0 - uv.y) * uRes.y;
+  float tSec = uFrame / 24.0;
 
-  vec3 c = defocus(uv, uBlur);
+  // 1. the warp — the dominant move, smooth and continuous
+  uv.x += warp(y, tSec * 2.4) * uWarp;
 
-  if(uChroma > 0.0){
-    vec2 px  = 1.0 / uRes;
-    vec2 dir = normalize(uv - 0.5 + vec2(1e-5));   // lateral CA grows from centre
-    vec2 d   = dir * uChroma * px;
-    float s0 = sig(uv), sF = sig(uv + d), sB = sig(uv - d);
-    float edgeWarm = max(0.0, sF - s0);            // red/orange side
-    float edgeCool = max(0.0, sB - s0);            // blue/cyan side
-    c.r += edgeWarm * 0.90;
-    c.g += edgeWarm * 0.45 + edgeCool * 0.55;
-    c.b += edgeCool * 0.90;
+  // 2. a much rarer hard tear: a few narrow bands only, not the whole frame
+  if(uTear > 0.0){
+    float band = floor(y / mix(18.0, 46.0, hash11(uStep * 3.7)));
+    float r = hash11(band * 7.13 + uStep * 11.7);
+    if(r > 1.0 - 0.18 * uTear)
+      uv.x += (hash11(band * 3.1 + uStep * 5.3) - 0.5) * 0.30 * uTear;
   }
 
-  // Analog snow: noise stretched horizontally into streaks of varying length,
-  // plus occasional bright dropout bands. Regenerates every frame at 24.
+  // 3. drag and defocus, sampled together
+  float dragDir = hash11(floor(y / 90.0) * 2.7 + uStep * 1.3) < 0.5 ? -1.0 : 1.0;
+  vec3 c = softSample(uv, uDrag * dragDir, uBlur);
+
+  // 4. fine vertical comb — measured at ~6% modulation depth
+  if(uComb > 0.0)
+    c *= 1.0 - uComb * 0.5 * (0.5 + 0.5 * sin(gl_FragCoord.x * 2.0944));
+
+  // 5. analog snow and dropout bands, regenerated every frame at 24
   if(uStatic > 0.0){
     float row  = floor(gl_FragCoord.y);
     float segW = mix(2.0, 10.0, hash21(vec2(row, floor(uFrame) * 0.37)));
@@ -661,6 +674,7 @@ void main(){
   fragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
 }`;
 
+
 function compile(type, source) {
   const s = gl.createShader(type);
   gl.shaderSource(s, source); gl.compileShader(s);
@@ -676,7 +690,7 @@ if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgram
 gl.useProgram(prog);
 
 const U = Object.fromEntries(
-  ['uSrc','uRes','uFrame','uStep','uTear','uChroma','uGrain','uStatic','uBlur']
+  ['uSrc','uRes','uFrame','uStep','uTear','uWarp','uDrag','uComb','uGrain','uStatic','uBlur']
     .map((n) => [n, gl.getUniformLocation(prog, n)]));
 
 const texture = gl.createTexture();
@@ -688,11 +702,18 @@ gl.viewport(0, 0, W, H);
 
 // ---------------------------------------------------------------- driver
 
+// ?fx=1.8 scales the whole distortion stack in one go, so intensity variants
+// can be rendered without touching per-board numbers.
+const FX = Number(new URLSearchParams(location.search).get('fx') || 1);
+
 async function renderFrame(n) {
   const t = n / FPS;
   const b = boardAt(t);
   const u = (t - b.start) / (b.end - b.start);
   const p = b.fx(u, t);
+  for (const k of ['warp', 'drag', 'tear', 'comb', 'static']) {
+    if (p[k]) p[k] *= FX;
+  }
 
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, W, H);
@@ -706,7 +727,9 @@ async function renderFrame(n) {
   gl.uniform1f(U.uFrame, n);
   gl.uniform1f(U.uStep, Math.floor(t * STEP_FPS));
   gl.uniform1f(U.uTear,   flash ? 0 : (p.tear   || 0));
-  gl.uniform1f(U.uChroma, flash ? 0 : (p.chroma || 0));
+  gl.uniform1f(U.uWarp,   flash ? 0 : (p.warp   || 0));
+  gl.uniform1f(U.uDrag,   flash ? 0 : (p.drag   || 0));
+  gl.uniform1f(U.uComb,   flash ? 0 : (p.comb   || 0));
   gl.uniform1f(U.uStatic, flash ? 0 : (p.static || 0));
   gl.uniform1f(U.uBlur,   flash ? 0 : (p.blur || 0));
   gl.uniform1f(U.uGrain,  p.grain || 0);
