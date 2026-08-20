@@ -17,7 +17,9 @@ const SAFE_V = { x: 555, w: 810 };    // 9:16  — 42.19% of width, centred
 const SAFE_H = { y: 180, h: 1080 };   // 16:9  — 75% of height, centred
 
 const RED = '#FF0000';
-const DOT_D = 7;                      // the dot is the same size wherever it appears
+// Measured off the storyboard .ai: 4.02pt on a 400.2pt board = 19.28px at the
+// 1920 master. The dot is the same size wherever it appears.
+const DOT_D = 19.3;
 
 const COPY = {
   line:   'Come to us when nice stops working.',
@@ -142,6 +144,13 @@ function hugeGlyph(ch, px, x, y, color = RED, rot = 0) {
 
 const stepped = (t) => Math.floor(t * STEP_FPS) / STEP_FPS;
 
+// Defocus pulse: the image goes soft and snaps back. Grain is applied after the
+// blur, so every pulse makes the grain read harder against the mush.
+function blurPulse(t, period, width, amp, phase = 0) {
+  let ph = ((t + phase) % period) / period;
+  return ph < width ? amp * Math.sin(Math.PI * ph / width) : 0;
+}
+
 // Deterministic hash — same one as the shader, so JS and GLSL agree.
 function hash11(p) {
   p = (p * 0.1031) % 1; if (p < 0) p += 1;
@@ -166,19 +175,21 @@ function blackFlash(t, rate) {
 const BOARDS = [
   { // 1 — black, the dot starts blinking
     id: 1, start: 0.0, end: 3.0,
-    fx: (u) => ({ grain: 0.055, static: 0.02, tear: 0, chroma: 0, flash: 0 }),
+    fx: (u, t) => ({ grain: 0.17, static: 0.11, tear: 0, chroma: 0, flash: 0,
+                     blur: blurPulse(t, 1.30, 0.42, 5.0) }),
     async draw(u, t) {
       if (dotOn(t)) dot(W / 2, H / 2);
     },
   },
   { // 2 — distortion, then the eye. Black and white, the dot still on it.
     id: 2, start: 3.0, end: 5.0,
-    fx: (u) => ({
-      grain: 0.075,
-      static: u < 0.28 ? 0.55 * (1 - u / 0.28) + 0.05 : 0.05,
-      tear:   u < 0.28 ? 0.85 * (1 - u / 0.28) : 0,
-      chroma: u < 0.28 ? 3.5 : 1.2,
+    fx: (u, t) => ({
+      grain:  0.19,
+      static: u < 0.28 ? 0.75 * (1 - u / 0.28) + 0.13 : 0.13,
+      tear:   u < 0.28 ? 0.90 * (1 - u / 0.28) : 0.10 + blurPulse(t, 0.83, 0.18, 0.35),
+      chroma: 0,
       flash:  u < 0.22 ? 0.5 : 0,
+      blur:   blurPulse(t, 0.91, 0.34, 9.0),
     }),
     async draw(u, t, tb) {
       const img = await loadPlate('eye', Math.round(tb * FPS) + 1);
@@ -190,8 +201,8 @@ const BOARDS = [
     id: 3, start: 5.0, end: 5.4,
     // The lockup is only up for well under half a second, so the tear punches
     // it in and out and leaves the middle clean enough to actually read.
-    fx: (u) => ({ grain: 0.08, static: 0.06, chroma: 5.0,
-                  tear:  u < 0.22 ? 0.7 : (u > 0.78 ? 0.7 : 0.0),
+    fx: (u) => ({ grain: 0.20, static: 0.26, chroma: 0, blur: 0,
+                  tear:  u < 0.22 ? 0.75 : (u > 0.78 ? 0.75 : 0.0),
                   flash: u < 0.15 ? 0.35 : 0 }),
     async draw(u, t, tb) {
       const img = await loadPlate('eye', Math.round((2.0 + tb) * FPS) + 1);
@@ -202,8 +213,10 @@ const BOARDS = [
   },
   { // 4 — red eye, the dot now white
     id: 4, start: 5.4, end: 6.6,
-    fx: (u) => ({ grain: 0.075, static: 0.04, tear: u > 0.8 ? 0.5 : 0.06, chroma: 1.8,
-                  flash: u > 0.85 ? 0.4 : 0 }),
+    fx: (u, t) => ({ grain: 0.18, static: 0.14, chroma: 0,
+                     tear: u > 0.8 ? 0.55 : 0.08 + blurPulse(t, 0.66, 0.15, 0.30),
+                     flash: u > 0.85 ? 0.4 : 0,
+                     blur: blurPulse(t, 1.05, 0.38, 11.0) }),
     async draw(u, t, tb) {
       const img = await loadPlate('eye', Math.round((4.0 + tb) * FPS) + 1);
       drawPlate(img, 1.02 + u * 0.06, 0, 0, 0.86);
@@ -213,9 +226,13 @@ const BOARDS = [
   },
   { // 5 — into the S. The shape is big enough for the chroma leak to read.
     id: 5, start: 6.6, end: 8.2,
-    fx: (u) => ({ grain: 0.07, static: 0.03,
-                  tear: u < 0.12 ? 0.7 : 0.05 + 0.25 * Math.max(0, u - 0.7),
-                  chroma: 9.0, flash: u < 0.1 ? 0.45 : 0 }),
+    // The S holds for 1.6s, so the tear escalates through it rather than only
+    // punching the ends.
+    fx: (u, t) => ({ grain: 0.19, static: 0.10 + 0.22 * u, chroma: 0,
+                     tear: u < 0.12 ? 0.75 : 0.10 + 0.55 * u * u
+                           + blurPulse(t, 0.54, 0.16, 0.40),
+                     flash: u < 0.1 ? 0.45 : 0.10 * u,
+                     blur: blurPulse(t, 0.77, 0.30, 13.0) }),
     async draw(u, t) {
       const s = stepped(t);
       const drift = (hash11(s * 4.1) - 0.5) * 40;
@@ -250,7 +267,7 @@ const FRAG = `#version 300 es
 precision highp float;
 uniform sampler2D uSrc;
 uniform vec2  uRes;
-uniform float uFrame, uStep, uTear, uChroma, uGrain, uStatic;
+uniform float uFrame, uStep, uTear, uChroma, uGrain, uStatic, uBlur;
 out vec4 fragColor;
 
 float hash11(float p){ p=fract(p*0.1031); p*=p+33.33; p*=p+p; return fract(p); }
@@ -275,12 +292,28 @@ vec2 tearUV(vec2 uv){
   return vec2(uv.x + off, uv.y);
 }
 
+// Defocus. Golden-angle disc sampling, so 14 taps spread evenly with no
+// visible rosette. Grain lands after this pass: every pulse of blur makes the
+// grain read harder against the softened image.
+vec3 defocus(vec2 uv, float r){
+  if(r <= 0.5) return tex(uv);
+  vec3 acc = vec3(0.0);
+  const int N = 14;
+  for(int i = 0; i < N; i++){
+    float fi  = float(i);
+    float ang = fi * 2.39996323;
+    float rad = sqrt((fi + 0.5) / float(N)) * r;
+    acc += tex(uv + vec2(cos(ang), sin(ang)) * rad / uRes);
+  }
+  return acc / float(N);
+}
+
 void main(){
   vec2 uv = gl_FragCoord.xy / uRes;
   uv.y = 1.0 - uv.y;
   uv = tearUV(uv);
 
-  vec3 c = tex(uv);
+  vec3 c = defocus(uv, uBlur);
 
   if(uChroma > 0.0){
     vec2 px  = 1.0 / uRes;
@@ -294,11 +327,16 @@ void main(){
     c.b += edgeCool * 0.90;
   }
 
+  // Analog snow: noise stretched horizontally into streaks of varying length,
+  // plus occasional bright dropout bands. Regenerates every frame at 24.
   if(uStatic > 0.0){
-    float row = floor(gl_FragCoord.y);
-    if(hash21(vec2(row, uFrame)) < uStatic * 0.35){
-      float sx = hash21(vec2(gl_FragCoord.x * 0.5, row + uFrame * 3.0));
-      c += vec3(step(0.72, sx)) * uStatic * 0.9;
+    float row  = floor(gl_FragCoord.y);
+    float segW = mix(2.0, 10.0, hash21(vec2(row, floor(uFrame) * 0.37)));
+    float seg  = floor(gl_FragCoord.x / segW);
+    c += (hash21(vec2(seg, row * 1.7 + uFrame * 13.0)) - 0.45) * uStatic * 0.60;
+    if(hash21(vec2(row, floor(uFrame))) < uStatic * 0.10){
+      float sx = hash21(vec2(gl_FragCoord.x * 0.35, row + uFrame * 3.0));
+      c += vec3(step(0.55, sx)) * uStatic * 1.10;
     }
   }
 
@@ -326,7 +364,7 @@ if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgram
 gl.useProgram(prog);
 
 const U = Object.fromEntries(
-  ['uSrc','uRes','uFrame','uStep','uTear','uChroma','uGrain','uStatic']
+  ['uSrc','uRes','uFrame','uStep','uTear','uChroma','uGrain','uStatic','uBlur']
     .map((n) => [n, gl.getUniformLocation(prog, n)]));
 
 const texture = gl.createTexture();
@@ -358,6 +396,7 @@ async function renderFrame(n) {
   gl.uniform1f(U.uTear,   flash ? 0 : (p.tear   || 0));
   gl.uniform1f(U.uChroma, flash ? 0 : (p.chroma || 0));
   gl.uniform1f(U.uStatic, flash ? 0 : (p.static || 0));
+  gl.uniform1f(U.uBlur,   flash ? 0 : (p.blur || 0));
   gl.uniform1f(U.uGrain,  p.grain || 0);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   gl.finish();
