@@ -223,9 +223,14 @@ addEventListener('touchmove', (e) => {
 
 /* ---------- image pool: assets/v3/images, one shuffled deck ---------- */
 
+/* Self-service pool: the folder contents are discovered by probing
+   f01..f60 / z01..z60 and keeping whatever actually loads. Add or remove
+   files freely (gaps are fine) — no counts to maintain in code; the only
+   rule is the fNN.jpg / zNN.jpg naming. */
+const MAX_PER_FOLDER = 60;
 const IMAGES = [];
-for (let i = 1; i <= 17; i++) IMAGES.push(`assets/v3/images/f/f${String(i).padStart(2, '0')}.jpg`);
-for (let i = 1; i <= 21; i++) IMAGES.push(`assets/v3/images/z/z${String(i).padStart(2, '0')}.jpg`);
+for (let i = 1; i <= MAX_PER_FOLDER; i++) IMAGES.push(`assets/v3/images/f/f${String(i).padStart(2, '0')}.jpg`);
+for (let i = 1; i <= MAX_PER_FOLDER; i++) IMAGES.push(`assets/v3/images/z/z${String(i).padStart(2, '0')}.jpg`);
 for (let i = IMAGES.length - 1; i > 0; i--) {
   const j = Math.floor(Math.random() * (i + 1));
   [IMAGES[i], IMAGES[j]] = [IMAGES[j], IMAGES[i]];
@@ -234,17 +239,19 @@ for (let i = IMAGES.length - 1; i > 0; i--) {
 /* Decoded ahead of use: swapping src every 140ms would otherwise force a
    synchronous decode of an 8MP JPEG on the main thread (visible stutter).
    Image objects are retained so their decoded frames stay in cache, and the
-   next deck entries are re-decoded ahead of each swap. */
+   next deck entries are re-decoded ahead of each swap. Four parallel chains
+   so missing probes don't stall the real downloads. */
 const loaded = [];
 bgImg.decoding = 'async';
-(function preload(i) {
+function preload(i, stride) {
   if (i >= IMAGES.length) return;
   const im = new Image();
   im.decoding = 'async';
   im.src = IMAGES[i];
-  im.decode().then(() => { loaded.push(im); preload(i + 1); },
-                   () => preload(i + 1));
-})(0);
+  im.decode().then(() => { loaded.push(im); bgImg.dataset.pool = String(loaded.length); preload(i + stride, stride); },
+                   () => preload(i + stride, stride));
+}
+for (let s = 0; s < 4; s++) preload(s, 4);
 
 let bgIdx = -1;
 let lastSwap = 0;

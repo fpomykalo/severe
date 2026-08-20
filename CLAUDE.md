@@ -24,7 +24,9 @@ css/style3.css     all layout; mobile ≤700px via one media query
 js/main3.js        scramble engine, morph, image pool, overlay, accordion,
                    live clocks
 assets/v3/fonts/   HaasGrotDisp-65Medium / -75Bold (woff2 + otf source)
-assets/v3/images/  f/f01..f17.jpg + z/z01..z21.jpg — one shuffled pool
+assets/v3/images/  f/*.jpg + z/*.jpg — one shuffled pool, self-service:
+                   main3.js probes f01..f60 / z01..z60 and keeps whatever
+                   loads (gaps fine, no counts in code; naming rule only)
 assets/v3/svg/     tm.svg (7×3), x.svg (26×26), x-m.svg (47×47),
                    arrow-scroll.svg (12×20 intro ↓), arrow-down.svg (5×9
                    "open" ↓) + arrow-down-m.svg (6×10), arrow-up.svg (7×7
@@ -79,8 +81,10 @@ assets/v3/svg/     tm.svg (7×3), x.svg (26×26), x-m.svg (47×47),
   #bg-img pointer-events:none + no touch-callout/user-drag, dragstart
   blocked — best-effort only (network tab still exposes files; user knows).
 - **Home 2/3:** pointer movement cycles the fullscreen pool (swap per
-  140ms of movement, object-fit cover, no effects). Images are decoded
-  ahead (`img.decode()`, decoding=async, next-2 prefetch) — never swap
+  140ms of movement, object-fit cover, no effects). Pool is discovered by
+  probing fNN/zNN up to 60 per folder — user adds/removes JPGs in the
+  folders with no code edit. Images are decoded ahead (`img.decode()`,
+  decoding=async, 4 parallel chains, next-2 prefetch) — never swap
   undecoded 3840px JPEGs (main-thread decode jank).
 - **Overlay:** click nav → body.overlay + data-tab. Image freezes, blur
   7.5px (user spec "blur 15" = Figma diameter) + scale(1.03) + **80% black
