@@ -17,6 +17,11 @@ const SAFE_V = { x: 555, w: 810 };    // 9:16  — 42.19% of width, centred
 const SAFE_H = { y: 180, h: 1080 };   // 16:9  — 75% of height, centred
 
 const RED = '#FF0000';
+// Not pure black. The graded plates floor at 22/255, and matching the ground to
+// that does two things: type boards sit at the same black level as footage
+// boards, and grain stops being half-rectified — on a 0 ground only the positive
+// excursions survive, which is what makes it read as speckle rather than grain.
+const GROUND = 'rgb(22,22,22)';
 // Measured off the storyboard .ai: 4.02pt on a 400.2pt board = 19.28px at the
 // 1920 master. The dot is the same size wherever it appears.
 const DOT_D = 19.3;
@@ -743,8 +748,14 @@ void main(){
   if(uLines > 0.0)
     c *= 1.0 - uLines * step(1.5, mod(gl_FragCoord.y, 3.0));
 
-  if(uGrain > 0.0)
-    c += grainNoise(gl_FragCoord.xy, uFrame) * uGrain * (1.0 - 0.45 * luma(c));
+  // Grain peaks in the mid-tones and eases off at both ends, as film does.
+  // Weighting it up in the shadows (as an earlier version did) pushed the noise
+  // below the ground and clipped ~9% of it, which is what turned grain into
+  // speckle on the dark areas.
+  if(uGrain > 0.0){
+    float l = luma(c);
+    c += grainNoise(gl_FragCoord.xy, uFrame) * uGrain * (0.55 + 1.80 * l * (1.0 - l));
+  }
 
   fragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
 }`;
@@ -817,7 +828,7 @@ async function renderFrame(n) {
   // A slow, always-present focal gradient, deepening during events.
   p.blurAmp = (p.blurAmp || 0) + 6 + (g ? 26 * g.amp * FX : 0);
 
-  ctx.fillStyle = '#000';
+  ctx.fillStyle = GROUND;
   ctx.fillRect(0, 0, W, H);
   ctxB.clearRect(0, 0, W, H);
   await b.draw(u, t, t - b.start);
