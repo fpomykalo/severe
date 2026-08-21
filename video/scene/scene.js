@@ -266,13 +266,6 @@ const treeFrame = (tb, offset) => Math.round((offset + tb * TREE_RATE) * FPS) + 
 
 const stepped = (t) => Math.floor(t * STEP_FPS) / STEP_FPS;
 
-// Defocus pulse: the image goes soft and snaps back. Grain is applied after the
-// blur, so every pulse makes the grain read harder against the mush.
-function blurPulse(t, period, width, amp, phase = 0) {
-  let ph = ((t + phase) % period) / period;
-  return ph < width ? amp * Math.sin(Math.PI * ph / width) : 0;
-}
-
 // Deterministic hash — same one as the shader, so JS and GLSL agree.
 function hash11(p) {
   p = (p * 0.1031) % 1; if (p < 0) p += 1;
@@ -381,22 +374,17 @@ const BOARDS = [
   },
   { // 6 — back to black, the marker alone
     id: 6, start: 8.2, end: 8.9,
-    fx: (u, t) => ({ grain: 0.17, static: 0.13, tear: 0, chroma: 0, flash: 0,
-                     blur: blurPulse(t, 1.1, 0.4, 4.0) }),
+    fx: () => ({ boost: 0.8 }),
     async draw() { label('S.', 177.40, 139.34); },
   },
   { // 7 — the cities arrive next to it
     id: 7, start: 8.9, end: 10.1,
-    fx: (u, t) => ({ grain: 0.17, static: 0.14, chroma: 0,
-                     tear: blurPulse(t, 0.7, 0.14, 0.30), flash: u < 0.1 ? 0.3 : 0,
-                     blur: blurPulse(t, 1.2, 0.36, 5.0) }),
+    fx: () => ({ boost: 0.9 }),
     async draw() { label('S.', 177.40, 139.34); cityStack(197.27, 139.34); },
   },
   { // 8 — the radial composition: Deployed / Globally on 45deg steps
     id: 8, start: 10.1, end: 11.6,
-    fx: (u, t) => ({ grain: 0.18, static: 0.16, chroma: 0,
-                     tear: blurPulse(t, 0.6, 0.13, 0.35), flash: 0.08,
-                     blur: blurPulse(t, 0.95, 0.32, 6.0) }),
+    fx: () => ({ boost: 1.0 }),
     async draw(u, t) {
       label('S.', 177.40, 139.34); cityStack(197.27, 139.34);
       const step = Math.floor(t * STEP_FPS);
@@ -411,38 +399,46 @@ const BOARDS = [
   },
   { // 9 — SEV: the vertical lockup blown up and rotated 180deg, cropped
     id: 9, start: 11.6, end: 12.4,
-    fx: (u, t) => ({ grain: 0.19, static: 0.12, chroma: 0,
-                     tear: 0.25 + 0.5 * blurPulse(t, 0.45, 0.3, 1.0), flash: 0.18,
-                     blur: blurPulse(t, 0.6, 0.3, 8.0) }),
+    fx: (u) => ({ boost: 1.5, noWarp: true,
+                  blurAmp: 52 * Math.max(0, Math.sin(u / 0.6 * Math.PI)) }),
     async draw(u, t) {
-      const drift = (hash11(Math.floor(t * STEP_FPS) * 3.3) - 0.5) * 30;
-      hugeVertical(711 + drift, -300, 845);          // S / E / V
+      glitchType(glitchAt(t), t, ({ dx = 0, dy = 0, skew = 0, alpha = 1 }) => {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.transform(1, 0, skew, 1, dx, dy);
+        hugeVertical(711, -300, 845);                // S / E / V
+        ctx.restore();
+      }, 0.7);
     },
   },
   { // 10 — ER, with the copy stacked around it
     id: 10, start: 12.4, end: 13.3,
-    fx: (u, t) => ({ grain: 0.19, static: 0.14, chroma: 0,
-                     tear: 0.20 + 0.5 * blurPulse(t, 0.4, 0.28, 1.0), flash: 0.18,
-                     blur: blurPulse(t, 0.66, 0.3, 8.0) }),
+    fx: () => ({ boost: 1.5, noWarp: true }),
     async draw(u, t) {
-      const drift = (hash11(Math.floor(t * STEP_FPS) * 6.1) - 0.5) * 26;
-      hugeVertical(870 + drift, -2700, 845);         // ...scrolled on to E / R
+      glitchType(glitchAt(t), t, ({ dx = 0, dy = 0, skew = 0, alpha = 1 }) => {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.transform(1, 0, skew, 1, dx, dy);
+        hugeVertical(870, -2700, 845);               // ...scrolled on to E / R
+        ctx.restore();
+      }, 0.7);
       typeField(true);
     },
   },
   { // 11 — the type field alone
     id: 11, start: 13.3, end: 14.4,
-    fx: (u, t) => ({ grain: 0.17, static: 0.15, chroma: 0,
-                     tear: blurPulse(t, 0.55, 0.14, 0.32), flash: 0.10,
-                     blur: blurPulse(t, 1.15, 0.35, 5.0) }),
+    fx: () => ({ boost: 1.0 }),
     async draw() { typeField(false); },
   },
   { // 12 — the trees, black and white
     id: 12, start: 14.4, end: 16.2,
-    fx: (u, t) => ({ grain: 0.19, static: u < 0.15 ? 0.5 : 0.13, chroma: 0,
-                     tear: u < 0.15 ? 0.7 : blurPulse(t, 0.8, 0.14, 0.28),
-                     flash: u < 0.12 ? 0.4 : 0.05,
-                     blur: blurPulse(t, 1.0, 0.34, 9.0) }),
+    // The trees arrive the way the eye did: the screen breaks, then they are
+    // there. Scripted, not one of the random events.
+    fx: (u) => {
+      const enter = Math.max(0, 1 - u / 0.16);
+      return { dragX: 95 * enter, dragY: 35 * enter, comb: 0.084 + 0.18 * enter,
+               warp: 0.004 + 0.05 * enter, boost: 1.1 };
+    },
     async draw(u, t, tb) {
       drawPlate(await loadPlate('trees', treeFrame(tb, 0.4)), 1.03, 0, 0, 0.9);
       typeField(false);
@@ -450,9 +446,7 @@ const BOARDS = [
   },
   { // 13 — the same trees, red
     id: 13, start: 16.2, end: 17.8,
-    fx: (u, t) => ({ grain: 0.19, static: 0.14, chroma: 0,
-                     tear: blurPulse(t, 0.72, 0.14, 0.30), flash: 0.06,
-                     blur: blurPulse(t, 1.05, 0.34, 9.0) }),
+    fx: () => ({ boost: 1.0 }),
     async draw(u, t, tb) {
       drawPlate(await loadPlate('trees', treeFrame(tb, 1.39)), 1.03, 0, 0, 0.9);
       tintRed();
@@ -461,9 +455,7 @@ const BOARDS = [
   },
   { // 14 — five white lockups down the 9:16 column
     id: 14, start: 17.8, end: 19.4,
-    fx: (u, t) => ({ grain: 0.19, static: 0.15, chroma: 0,
-                     tear: blurPulse(t, 0.62, 0.16, 0.34), flash: 0.10,
-                     blur: blurPulse(t, 0.88, 0.3, 8.0) }),
+    fx: () => ({ boost: 1.2, noWarp: true }),
     async draw(u, t, tb) {
       drawPlate(await loadPlate('trees', treeFrame(tb, 2.27)), 1.03, 0, 0, 0.9);
       tintRed();
@@ -478,9 +470,7 @@ const BOARDS = [
   },
   { // 15 — back to black and white, the stack alternating red and white
     id: 15, start: 19.4, end: 20.8,
-    fx: (u, t) => ({ grain: 0.19, static: 0.16, chroma: 0,
-                     tear: blurPulse(t, 0.58, 0.16, 0.36), flash: 0.12,
-                     blur: blurPulse(t, 0.92, 0.3, 8.0) }),
+    fx: () => ({ boost: 1.2, noWarp: true }),
     async draw(u, t, tb) {
       drawPlate(await loadPlate('trees', treeFrame(tb, 3.15)), 1.03, 0, 0, 0.9);
       const step = Math.floor(t * STEP_FPS);
@@ -496,25 +486,24 @@ const BOARDS = [
   { // 16 — the reveal. Cosmos treatment: the lockup multiplies, offsets and
     //      shreds on the 12fps step, over black.
     id: 16, start: 20.8, end: 22.8,
-    fx: (u, t) => ({ grain: 0.18, static: 0.10 + 0.10 * (1 - u), chroma: 0,
-                     tear: u < 0.55 ? 0.45 * (1 - u / 0.55) : 0.04,
-                     flash: u < 0.4 ? 0.35 : 0.04,
-                     blur: blurPulse(t, 1.25, 0.3, 6.0) }),
+    fx: () => ({ boost: 1.5, noWarp: true }),
     async draw(u, t) {
-      const step = Math.floor(t * STEP_FPS);
-      const copies = u < 0.5 ? 1 + Math.floor(hash11(step * 7.7) * 3) : 1;
-      for (let i = 0; i < copies; i++) {
-        const off = i === 0 ? 0 : (hash11(step * 3.9 + i * 2.1) - 0.5) * 420;
-        const sx  = i === 0 ? 0 : (hash11(step * 5.1 + i * 1.3) - 0.5) * 160;
-        wordmark(969 + sx, 719 + off, 141.7);
-      }
+      // The lockup arrives shredded and resolves: a scripted envelope over the
+      // first half, then whatever random events land after it.
+      const scripted = 0.85 * Math.max(0, 1 - u / 0.5);
+      const g = scripted > 0.05 ? { amp: scripted } : glitchAt(t);
+      glitchType(g, t, ({ dx = 0, dy = 0, skew = 0, alpha = 1 }) => {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.transform(1, 0, skew, 1, dx, dy);
+        wordmark(969, 719, 141.7);
+        ctx.restore();
+      });
     },
   },
   { // 17 — the copy starts building around it
     id: 17, start: 22.8, end: 24.0,
-    fx: (u, t) => ({ grain: 0.17, static: 0.11, chroma: 0,
-                     tear: blurPulse(t, 0.85, 0.12, 0.22), flash: 0.05,
-                     blur: blurPulse(t, 1.3, 0.32, 5.0) }),
+    fx: () => ({ boost: 0.8, noWarp: true }),
     async draw() {
       wordmark(969, 719, 141.7);
       label(COPY.line,   179.46, 209.65);
@@ -525,9 +514,7 @@ const BOARDS = [
   },
   { // 18 — and completes
     id: 18, start: 24.0, end: 25.4,
-    fx: (u, t) => ({ grain: 0.17, static: 0.11, chroma: 0,
-                     tear: blurPulse(t, 0.8, 0.12, 0.24), flash: 0.05,
-                     blur: blurPulse(t, 1.35, 0.32, 5.0) }),
+    fx: () => ({ boost: 0.8, noWarp: true }),
     async draw() {
       wordmark(969, 719, 141.7);
       label(COPY.line,   179.46, 209.65);
@@ -542,36 +529,42 @@ const BOARDS = [
   },
   { // 19 — the black beat
     id: 19, start: 25.4, end: 26.0,
-    fx: () => ({ grain: 0.14, static: 0.07, tear: 0, chroma: 0, flash: 0, blur: 0 }),
+    fx: () => ({ boost: 0, grain: 0.20 }),
     async draw() {},
   },
   { // 20 — the big S with its trademark, and the transport marks
     id: 20, start: 26.0, end: 28.6,
-    fx: (u, t) => ({ grain: 0.19, static: 0.10 + 0.20 * u, chroma: 0,
-                     tear: u < 0.10 ? 0.7 : 0.06 + 0.5 * u * u
-                           + blurPulse(t, 0.5, 0.15, 0.35),
-                     flash: u < 0.1 ? 0.4 : 0.06 + 0.14 * u,
-                     blur: blurPulse(t, 0.82, 0.3, 11.0) }),
+    // Same one-sided defocus as the cropped S, and the same size drift.
+    fx: (u) => ({
+      boost: 1.6, noWarp: true,
+      blurAmp: 74 * Math.max(0, Math.sin((u - 0.14) / 0.46 * Math.PI)),
+    }),
     async draw(u, t) {
-      const drift = (hash11(Math.floor(t * STEP_FPS) * 2.7) - 0.5) * 22;
-      glyphAtCap('S', 1501, 959 + drift, 719 - 1073 / 2);
-      setType(1501 * 0.115, 700);
-      ctx.fillStyle = RED; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      ctx.fillText('™', 1310 + drift, 268);
-      transportMarks(576 + drift, 1224, 26);
+      const k = 1.12 + 0.12 * Math.pow(1 - u, 2);
+      glitchType(glitchAt(t), t, ({ dx = 0, dy = 0, skew = 0, alpha = 1 }) => {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.transform(1, 0, skew, 1, dx, dy);
+        ctx.translate(959, 719);
+        ctx.scale(k, k);
+        ctx.translate(-959, -719);
+        glyphAtCap('S', 1501, 959, 719 - 1073 / 2);
+        setType(1501 * 0.115, 700);
+        ctx.fillStyle = RED; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        ctx.fillText('™', 1310, 268);
+        transportMarks(576, 1224, 26);
+        ctx.restore();
+      });
     },
   },
   { // 21 — the lockup, small
     id: 21, start: 28.6, end: 30.0,
-    fx: (u, t) => ({ grain: 0.16, static: 0.09, chroma: 0,
-                     tear: u < 0.08 ? 0.5 : 0, flash: u < 0.08 ? 0.3 : 0,
-                     blur: blurPulse(t, 1.4, 0.3, 4.0) }),
+    fx: () => ({ boost: 0.6, noWarp: true }),
     async draw() { wordmark(964, 719, 38); },
   },
   { // 22 — out
     id: 22, start: 30.0, end: 31.0,
-    fx: (u) => ({ grain: 0.13 * (1 - u), static: 0.05 * (1 - u),
-                  tear: 0, chroma: 0, flash: 0, blur: 0 }),
+    fx: (u) => ({ boost: 0, grain: 0.234 * (1 - u), comb: 0.084 * (1 - u) }),
     async draw() {},
   },
 ];
