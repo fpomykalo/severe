@@ -121,7 +121,7 @@ const fontsReady = Promise.race([
 fontsReady.then(() => {
   const ctx = document.createElement('canvas').getContext('2d');
   const PRE = '22:04.37                    ';
-  ctx.font = '500 12px HaasDisp';
+  ctx.font = '500 14px HaasDisp';
   document.documentElement.style.setProperty('--clock2', ctx.measureText(PRE).width + 'px');
   ctx.font = '500 10px HaasDisp';
   document.documentElement.style.setProperty('--clock2-m', ctx.measureText(PRE).width + 'px');

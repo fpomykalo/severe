@@ -46,18 +46,16 @@ assets/v3/svg/     tm.svg (7×3), x.svg (26×26), x-m.svg (47×47),
   Personnel sub-column: rail + `(cw+16)/2` (1082). Nav baselines 20px above
   bottom; X 26×26 at right/bottom 20.
 - **Type:** 'HaasDisp' (500 = 65 Medium, 700 = 75 Bold). Cities/clock:
-  12px on desktop (user note: match the overlay text; cities top 20, clock
-  top 34 = +14 line pitch), 10px on mobile (16/28). #clock-r needs its own
+  14px on desktop (user note: match the overlay text; cities top 20, clock
+  top 36 = +16 line pitch), 10px on mobile (16/28). #clock-r needs its own
   text-box trim (abs-positioned spans don't inherit the trim) or the second
   clock sits ~1px lower.
-  Overlay text 12px with **line-height 14px** (Figma uses explicit 14, not
-  the 14.4 the font's normal would give). Nav + wordmark 36px (no tracking).
+  Overlay text 14px with **line-height 16px** (user bump from Figma's
+  12/14, Aug 2026; desktop arrows paired up to 8×8 ↗ / 6×10 ↓ to match).
+  Nav + wordmark 36px (no tracking).
   Hero 363px, tracking −3.63px, first-E span +0.16px. All text cap-aligned
   via `text-box: trim-both cap alphabetic`. Font: upm 1000, cap 715 → cap
-  is 8.577px at 12px; Figma's layout uses integer coordinates from a
-  rounded 9px cap box, so flow gaps carry the remainder: `.p-link`
-  margin-top 5.42px, `.p-sub` padding-bottom 19.42px, bio margin-bottom
-  19.42px. Don't "clean up" these fractions.
+  is 10.01px at 14px (effectively integer), so flow gaps are clean 5/19.
 - **Home 1 (intro):** hero is #hero-lockup in design units (S ink at 0,0,
   cap box 1416×260; word at −6px, ™ at 1389.04/0.55 w26.96), positioned by
   a JS transform: desktop `translate(11k,63k) scale(k)` (k=vw/1440), mobile
@@ -99,15 +97,14 @@ assets/v3/svg/     tm.svg (7×3), x.svg (26×26), x-m.svg (47×47),
   LinkedIn, email) — but hover rules are disabled under `(hover: none)` so
   taps on touch devices never leave a stuck underline.
 - **Personnel column:** rows are content-driven (no fixed pitch): name cap
-  +5 from stroke; right sub-column title (K. Kitev's "Director of
-  Operations" is ONE line everywhere — user override of Figma's 2-line
-  desktop break; at 1440 it ends ~3px short of the inquire rail, below
-  ~1400px viewport it would collide — flagged); LinkedIn cap = title cap
-  + lines·14; next stroke =
-  LinkedIn cap + 28. Accordion (one open): bio cap = LinkedIn cap + 29,
-  next stroke = bio bottom + 19.42. Permanent Associates (static): label
-  +5, entries +34/+91, links +62/+119, height 128. LinkedIn ↗ 7×7 at
-  text+48; email ↗ at +97. URLs: kkitev, filip-pomykalo, zivanrosic,
+  +5 from stroke; right sub-column titles WRAP naturally in the
+  sub-column (at 14px the long titles don't fit one line — all four are
+  2 lines at 1440); LinkedIn cap = title baseline + 5; next stroke +19.
+  Accordion (one open): bio cap = LinkedIn bottom + 20, next stroke =
+  bio bottom + 19. NS expanded bottoms out 4px above the nav at 900-tall
+  viewports — shorter windows will clip (flagged). Permanent Associates
+  (static): label +5, entries +35/+96, links +66/+127, height 140.
+  LinkedIn ↗ 8×8 at text+55; email ↗ at +121.5. URLs: kkitev, filip-pomykalo, zivanrosic,
   noahjoelsmith, philipdeguzman, cody-duma-92439780.
   **K. Kitev's bio is a placeholder (copy of N. Smith's).** FP + ŽR bios
   are user-provided (Aug 2026); NS from Figma.
