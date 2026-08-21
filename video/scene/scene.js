@@ -340,7 +340,7 @@ const BOARDS = [
         ctx.transform(1, 0, skew, 1, dx, dy);
         verticalWordmark(W / 2, H / 2, H * 0.62);
         ctx.restore();
-      });
+      }, 0.42);
     },
   },
   { // 4 — red eye, the dot now white
@@ -367,8 +367,14 @@ const BOARDS = [
     // Geometry measured off board 5 of the .ai: the visible red spans
     // 1849x1256px and is clipped at the bottom, which is a 2720px S with its
     // cap top at y=182, centred at x=951.
+    // Starts 30% over size and settles to the measured 2720px, scaling about
+    // the centre of its final cap box so it shrinks into place rather than
+    // drifting. Ease-out, so most of the move happens early.
     async draw(u, t) {
-      corruptGlyph(glitchAt(t), t, 'S', 2720, 951, 182);
+      const k = 1 + 0.30 * Math.pow(1 - u, 2);
+      const capMid = 182 + 2720 * 0.715 / 2;
+      corruptGlyph(glitchAt(t), t, 'S', 2720 * k, 951,
+                   capMid - 2720 * k * 0.715 / 2);
     },
   },
   { // 6 — back to black, the marker alone
@@ -581,15 +587,15 @@ function boardAt(t) {
 // some ghosted back, and a horizontal band is sliced out and shifted sideways.
 // Between events it is completely clean — so this does nothing unless an event
 // is running.
-function glitchType(g, t, paint) {
+function glitchType(g, t, paint, move = 1) {
   if (!g || g.amp < 0.12) { paint({}); return; }
   const s = Math.floor(t * STEP_FPS);
   const copies = 1 + Math.floor(hash11(s * 2.31) * 3);
   for (let i = copies - 1; i >= 0; i--) {
     paint({
-      dx:    i === 0 ? 0 : (hash11(s * 3.11 + i * 7.7) - 0.5) * 300 * g.amp,
-      dy:    i === 0 ? 0 : (hash11(s * 5.33 + i * 3.3) - 0.5) * 240 * g.amp,
-      skew:  (hash11(s * 4.71 + i * 2.1) - 0.5) * 0.40 * g.amp,
+      dx:    i === 0 ? 0 : (hash11(s * 3.11 + i * 7.7) - 0.5) * 300 * g.amp * move,
+      dy:    i === 0 ? 0 : (hash11(s * 5.33 + i * 3.3) - 0.5) * 240 * g.amp * move,
+      skew:  (hash11(s * 4.71 + i * 2.1) - 0.5) * 0.40 * g.amp * move,
       alpha: i === 0 ? 1 : 0.28 + 0.45 * hash11(s * 9.13 + i * 1.9),
     });
   }
@@ -598,20 +604,20 @@ function glitchType(g, t, paint) {
     const h  = 60 + hash11(s * 2.91) * 260;
     ctx.save();
     ctx.beginPath(); ctx.rect(0, y0, W, h); ctx.clip();
-    paint({ dx: (hash11(s * 1.77) - 0.5) * 420 * g.amp });
+    paint({ dx: (hash11(s * 1.77) - 0.5) * 420 * g.amp * move });
     ctx.restore();
   }
 }
 
 // Paint a huge glyph through the corruption, by its cap box.
-function corruptGlyph(g, t, ch, fontPx, cx, capTopPx, color = RED) {
+function corruptGlyph(g, t, ch, fontPx, cx, capTopPx, color = RED, move = 1) {
   glitchType(g, t, ({ dx = 0, dy = 0, skew = 0, alpha = 1 }) => {
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.transform(1, 0, skew, 1, dx, dy);
     glyphAtCap(ch, fontPx, cx, capTopPx, color);
     ctx.restore();
-  });
+  }, move);
 }
 
 // ---------------------------------------------------------------- glitch events
@@ -670,15 +676,17 @@ vec3  tex(vec2 uv){ return texture(uSrc, clamp(uv, 0.0, 1.0)).rgb; }
 // correlation is -0.174 in the TENDU reference against -0.377 for the naive
 // version, so the noise is generated on a ~1.9px cell and smoothly
 // interpolated, which softens it and drops the contrast.
-float grainNoise(vec2 p, float t){
+// Fixed pattern, not reseeded per frame: an animated field reads as moving
+// noise rather than as grain sitting on the screen. It is applied last in the
+// chain, after warp, drag and comb, so it never rides the distortion.
+float grainNoise(vec2 p){
   vec2 g = p / 1.10;
   vec2 i = floor(g), f = fract(g);
   f = f * f * (3.0 - 2.0 * f);
-  vec2 o = vec2(t * 37.7, t * 17.3);
-  float a = hash21(i + o);
-  float b = hash21(i + vec2(1.0, 0.0) + o);
-  float c = hash21(i + vec2(0.0, 1.0) + o);
-  float d = hash21(i + vec2(1.0, 1.0) + o);
+  float a = hash21(i);
+  float b = hash21(i + vec2(1.0, 0.0));
+  float c = hash21(i + vec2(0.0, 1.0));
+  float d = hash21(i + vec2(1.0, 1.0));
   return mix(mix(a, b, f.x), mix(c, d, f.x), f.y) - 0.5;
 }
 float luma(vec3 c){ return dot(c, vec3(0.2126,0.7152,0.0722)); }
@@ -754,7 +762,7 @@ void main(){
   // speckle on the dark areas.
   if(uGrain > 0.0){
     float l = luma(c);
-    c += grainNoise(gl_FragCoord.xy, uFrame) * uGrain * (0.55 + 1.80 * l * (1.0 - l));
+    c += grainNoise(gl_FragCoord.xy) * uGrain * (0.55 + 1.80 * l * (1.0 - l));
   }
 
   fragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
@@ -808,7 +816,7 @@ async function renderFrame(n) {
   const p = {
     warp: 0.004, dragX: 0, dragY: 0, comb: 0.084,
     blurBase: 0, blurAmp: 0, focusDir: hash11(Math.floor(t / 2.7) * 5.3) * 6.283,
-    lines: 0.035, grain: 0.26,
+    lines: 0.035, grain: 0.234,
     ...base,
   };
 
