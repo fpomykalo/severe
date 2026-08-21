@@ -326,7 +326,16 @@ const BOARDS = [
       const img = await loadPlate('eye', Math.round((2.0 + tb) * FPS) + 1);
       drawPlate(img, 1.02, 0, 0, 0.86);
       tintRed();
-      verticalWordmark(W / 2, H / 2, H * 0.62);
+      // The lockup is on screen for well under half a second, so it always
+      // arrives corrupted and settles, rather than waiting for a random event.
+      const g = glitchAt(t) || { amp: 0.6 * Math.max(0, 1 - u / 0.55) };
+      glitchType(g, t, ({ dx = 0, dy = 0, skew = 0, alpha = 1 }) => {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.transform(1, 0, skew, 1, dx, dy);
+        verticalWordmark(W / 2, H / 2, H * 0.62);
+        ctx.restore();
+      });
     },
   },
   { // 4 — red eye, the dot now white
@@ -344,7 +353,12 @@ const BOARDS = [
     // The S holds for 1.6s, so the tear escalates through it rather than only
     // punching the ends.
     // The S is the biggest shape in the intro, so events hit hardest here.
-    fx: () => ({ boost: 1.6, blurBase: 2, noWarp: true }),
+    // One-sided defocus: the focal gradient deepens hard, holds, and snaps
+    // back, so only part of the letter goes soft — as in the blur references.
+    fx: (u) => ({
+      boost: 1.6, noWarp: true, blurBase: 2,
+      blurAmp: 78 * Math.max(0, Math.sin((u - 0.18) / 0.42 * Math.PI)),
+    }),
     // Geometry measured off board 5 of the .ai: the visible red spans
     // 1849x1256px and is clipped at the bottom, which is a 2720px S with its
     // cap top at y=182, centred at x=951.
@@ -711,7 +725,8 @@ void main(){
   uv.x += warp(y, tSec * 2.4) * uWarp;
 
   float blurPx = uBlurBase + uBlurAmp * focusField(uv);
-  float dirSign = hash11(floor(y / 110.0) * 2.7 + uStep * 1.3) < 0.5 ? -1.0 : 1.0;
+  // Smooth, not banded — a per-band random sign produced hard horizontal bars.
+  float dirSign = sin(y * 0.0021 + uStep * 0.55);
   vec3 c = softSample(uv, vec2(uDragX * dirSign, uDragY), blurPx);
 
   // The stable layer never warps, drags or slices — the dot holds its place.
