@@ -101,8 +101,11 @@ assets/v3/svg/     tm.svg (7×3), x.svg (26×26), x-m.svg (47×47),
   sub-column (at 14px the long titles don't fit one line — all four are
   2 lines at 1440); LinkedIn cap = title baseline + 5; next stroke +19.
   Accordion (one open): bio cap = LinkedIn bottom + 20, next stroke =
-  bio bottom + 19. NS expanded bottoms out 4px above the nav at 900-tall
-  viewports — shorter windows will clip (flagged). Permanent Associates
+  bio bottom + 19. Desktop columns are SCROLL CONTAINERS (like mobile):
+  .col top 48 (border-top = the rule), bottom 66 = mask edge 20px above
+  the nav line (nav cap top is 100vh−46); labels are position:fixed on
+  the rails above the scroll region; scrollbars hidden; overflowing
+  content (e.g. NS expanded on short windows) scrolls under the mask. Permanent Associates
   (static): label +5, entries +35/+96, links +66/+127, height 140.
   LinkedIn ↗ 8×8 at text+55; email ↗ at +121.5. URLs: kkitev, filip-pomykalo, zivanrosic,
   noahjoelsmith, philipdeguzman, cody-duma-92439780.

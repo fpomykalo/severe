@@ -155,16 +155,23 @@ body[data-tab="inquire"]   #nav-inquire   { opacity: 1; }
 #overlay { display: none; position: fixed; inset: 0; z-index: 10; }
 body.overlay #overlay { display: block; }
 
+/* each column is a scroll container: the top rule is its border, content
+   scrolls beneath and is masked 20px above the nav line (nav cap top is at
+   100vh-46, so the clip edge sits at 100vh-66 -> bottom: 66px) */
 .col {
   position: absolute;
-  top: 0;
-  height: 100%;
+  top: 48px;
+  bottom: 66px;
   width: var(--cw);
+  border-top: 1px solid var(--red);
+  overflow-y: auto;
+  scrollbar-width: none;
   font-size: 14px;
   line-height: 16px;
   opacity: 0.3;
   transition: opacity .15s ease;
 }
+.col::-webkit-scrollbar { display: none; }
 .col-manifesto { left: var(--r3); }
 .col-personnel { left: var(--r4); }
 .col-inquire   { left: var(--r5); }
@@ -172,14 +179,17 @@ body[data-tab="manifesto"] .col-manifesto { opacity: 1; }
 body[data-tab="personnel"] .col-personnel { opacity: 1; }
 body[data-tab="inquire"]   .col-inquire   { opacity: 1; }
 
+/* labels sit above the scroll region (fixed on the rails, dim with the column) */
 .col-label {
-  position: absolute;
+  position: fixed;
   top: 20px;
-  left: 0;
   white-space: pre;
   cursor: pointer;
   text-box: trim-both cap alphabetic;
 }
+.col-manifesto .col-label { left: var(--r3); }
+.col-personnel .col-label { left: var(--r4); }
+.col-inquire   .col-label { left: var(--r5); }
 .col-label:hover { text-decoration: underline; }
 
 /* "+" when closed, ↓ arrow when open/active */
@@ -198,22 +208,10 @@ body[data-tab="manifesto"] .col-manifesto .col-label .arr,
 body[data-tab="personnel"] .col-personnel .col-label .arr,
 body[data-tab="inquire"]   .col-inquire   .col-label .arr { display: inline-block; }
 
-.col-rule {
-  position: absolute;
-  top: 48px;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: var(--red);
-}
+.col-rule { display: none; }   /* the column border is the rule */
 
 .col-body {
-  position: absolute;
-  top: 48px;
-  left: 0;
-  right: 0;
-  border-top: 1px solid var(--red);
-  padding-top: 5px;
+  padding: 5px 0 20px;
   white-space: pre-wrap;
   text-box: trim-both cap alphabetic;
 }
@@ -228,9 +226,11 @@ body[data-tab="inquire"]   .col-inquire   .col-label .arr { display: inline-bloc
 }
 
 #email {
-  position: absolute;
-  top: 54px;
-  left: 0;
+  position: relative;
+  display: block;
+  width: -moz-max-content;
+  width: max-content;
+  margin-top: 5px;
   white-space: pre;
   text-box: trim-both cap alphabetic;
 }
@@ -239,9 +239,10 @@ body[data-tab="inquire"]   .col-inquire   .col-label .arr { display: inline-bloc
 
 /* ---------- personnel rows ---------- */
 
-#p-rows { position: absolute; top: 48px; left: 0; right: 0; }
+#p-rows { padding-bottom: 20px; }
 
 .p-row { border-top: 1px solid var(--red); }
+.p-row:first-child { border-top: none; }   /* the column border is the first line */
 
 .p-head { position: relative; cursor: pointer; }
 
@@ -418,37 +419,20 @@ body[data-state="morph"] #intro-arrow { opacity: 0; }
     right: 16px;
     top: 227px;
     bottom: 0;
-    height: auto;
     width: auto;
-    border-top: 1px solid var(--red);
-    overflow-y: auto;
-    scrollbar-width: none;
     font-size: 14px;
     line-height: 15px;
   }
-  .col::-webkit-scrollbar { display: none; }
 
   .col-label { display: none; }
   .col-rule { display: none; }
 
-  .col-body {
-    position: static;
-    border-top: none;
-    padding: 15px 0 16px;
-  }
+  .col-body { padding: 15px 0 16px; }
 
-  #email {
-    position: relative;
-    top: auto;
-    display: block;
-    width: -moz-max-content;
-    width: max-content;
-    margin-top: 10px;
-  }
+  #email { margin-top: 10px; }
   #email .ext-arr { left: 121.5px; }
 
-  #p-rows { position: static; padding-bottom: 16px; }
-  .col-personnel .p-row:first-child { border-top: none; }
+  #p-rows { padding-bottom: 16px; }
 
   .p-name { top: 10px; }
   .p-sub { margin-left: 193.63px; padding: 10px 0 19px; }
