@@ -98,3 +98,59 @@ blacks and blown highlights, which was wrong):
 `SEVERE__Storyboard.ai` — PDF-1.6, 23 pages: 22 boards at MediaBox 400×300
 (4:3 exact) + one 2642×2144 guides artboard. Font: HaasGrotDisp-65Medium,
 same family already in `assets/v3/fonts/`.
+
+
+## Distortion vocabulary (revised after the Glitches / Type_glitches refs)
+
+An earlier pass modelled the distortion as hard-edged random block displacement.
+That is a *digital datamosh* look and it is wrong for this project. The
+references are **analog tape**: soft, dragged, liquid.
+
+Measured by tracing a stripe through TENDU frame 0009:
+
+- **Serpentine warp** — a stripe wanders **±142px on a 1422px frame** (rms 70px,
+  so ±10% of width). A single sine explains only **36%** of the excursion: it is
+  summed octaves. Measured vertical periods 617 / 308 / 206 / 103px on a 792px
+  frame → roughly frame-height and its /3, /6, /12 harmonics.
+- **2D drag** — shapes smear into soft trailing streaks. The whole-screen
+  reference pulls type into **vertical** streaks as often as horizontal ones.
+- **Fine vertical comb** at ~6% modulation depth.
+- **Narrow slices only** — 12–40px bands, a handful at a time. Never the whole
+  frame, never thick bright bars (explicitly rejected by the user).
+- **Fine horizontal line dither** — 1px lines on a 3px pitch, subtle.
+- Soft edges throughout.
+
+### Event cadence
+
+The references are not continuously broken: TENDU and HOT TAKES both sit clean
+for long stretches then corrupt for a few frames. Heavy effects are therefore
+**discrete events**, generated deterministically:
+
+- gap between events **1.50–3.05s**, mean **2.44s**
+- duration **2–9 frames** at 24fps
+- 12 events across the 31s film
+- envelope snaps in and decays as `(1-u)^0.6` — glitches do not ease
+
+Only grain, fine lines, a trace of warp and a slow focal gradient run
+continuously underneath.
+
+### Type corruption (HOT TAKES reference)
+
+During an event only: the word duplicates into 2–3 copies, each offset up to
+300 × 240px, some skewed up to 0.40, ghosts at 0.28–0.73 alpha, plus a
+60–320px horizontal band sliced out and shifted up to 420px sideways.
+
+### Focal field (blur references)
+
+Not a uniform blur — a **smooth focal gradient** across the frame in an
+arbitrary direction, one side sharp and the other soft (SEVE defocused while RE
+is not; the S sharp left and soft right). Implemented as
+`blur = base + amp · smoothstep(dot(uv-0.5, dir))`, direction rotating on a
+2.7s clock.
+
+### Stable layer
+
+The dot must never move. It is drawn to a **separate canvas that the distortion
+never touches** and composited after warp, drag and slice — verified locked at
+(959.6, 719.5) / (959.9, 719.7) / (959.3, 719.3) across frames, against a frame
+centre of (960.4, 720.4) measured from the .ai.

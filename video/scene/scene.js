@@ -27,8 +27,12 @@ const COPY = {
   deploy: 'Deployed — Globally',
 };
 
-const src = document.getElementById('src');
-const ctx = src.getContext('2d', { willReadFrequently: false });
+const src  = document.getElementById('src');
+const ctx  = src.getContext('2d', { willReadFrequently: false });
+// Stable layer: elements that must not be displaced by the distortion. The dot
+// lives here — it sits at frame centre and holds there, whatever the tape does.
+const srcB = document.getElementById('srcB');
+const ctxB = srcB.getContext('2d', { willReadFrequently: false });
 const gl  = document.getElementById('out').getContext('webgl2', {
   preserveDrawingBuffer: true, antialias: false, alpha: false,
 });
@@ -88,11 +92,11 @@ function setType(px, weight = 500, tracking = 0) {
   ctx.letterSpacing = `${tracking}px`;
 }
 
-function dot(x, y, color = RED) {
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(x, y, DOT_D / 2, 0, Math.PI * 2);
-  ctx.fill();
+function dot(x, y, color = RED, target = ctxB) {
+  target.fillStyle = color;
+  target.beginPath();
+  target.arc(x, y, DOT_D / 2, 0, Math.PI * 2);
+  target.fill();
 }
 
 // The vertical lockup: SEVERE rotated -90°, reading bottom-to-top, with ™.
@@ -292,27 +296,19 @@ function blackFlash(t, rate) {
 const BOARDS = [
   { // 1 — black, the dot starts blinking
     id: 1, start: 0.0, end: 3.0,
-    fx: (u, t) => ({ grain: 0.17, static: 0.11, comb: 0.06, warp: 0.030,
-                     tear: 0, drag: 0, flash: 0,
-                     blur: blurPulse(t, 1.30, 0.42, 5.0) }),
-    async draw(u, t) {
-      if (dotOn(t)) dot(W / 2, H / 2);
-    },
+    fx: () => ({ boost: 0.7 }),
+    async draw() {},
+    drawStable(u, t) { if (dotOn(t)) dot(W / 2, H / 2); },
   },
   { // 2 — distortion, then the eye. Black and white, the dot still on it.
     id: 2, start: 3.0, end: 5.0,
-    fx: (u, t) => {
-      const enter = Math.max(0, 1 - u / 0.28);
-      return {
-        grain:  0.19,
-        static: 0.13 + 0.62 * enter,
-        comb:   0.07 + 0.06 * enter,
-        warp:   0.052 + 0.055 * enter + blurPulse(t, 1.7, 0.3, 0.030),
-        drag:   26 + 96 * enter + blurPulse(t, 0.83, 0.18, 60),
-        tear:   0.55 * enter,
-        flash:  u < 0.22 ? 0.5 : 0,
-        blur:   blurPulse(t, 0.91, 0.34, 9.0),
-      };
+    // The storyboard's own beat: the screen distorts, then the eye is there.
+    // Scripted, not one of the random events.
+    fx: (u) => {
+      const enter = Math.max(0, 1 - u / 0.24);
+      return { warp: 0.004 + 0.075 * enter, dragX: 110 * enter, dragY: 40 * enter,
+               slice: 0.9 * enter, noise: 0.10 + 0.5 * enter, comb: 0.05 + 0.10 * enter,
+               boost: 1.15 };
     },
     async draw(u, t, tb) {
       const img = await loadPlate('eye', Math.round(tb * FPS) + 1);
@@ -324,10 +320,7 @@ const BOARDS = [
     id: 3, start: 5.0, end: 5.4,
     // The lockup is only up for well under half a second, so the tear punches
     // it in and out and leaves the middle clean enough to actually read.
-    fx: (u, t) => ({ grain: 0.20, static: 0.26, comb: 0.09, blur: 0,
-                     warp: 0.070, drag: 30 + blurPulse(t, 0.31, 0.3, 90),
-                     tear:  u < 0.22 ? 0.6 : (u > 0.78 ? 0.6 : 0.0),
-                     flash: u < 0.15 ? 0.35 : 0 }),
+    fx: (u) => ({ slice: u < 0.3 ? 1.0 : 0, dragY: u < 0.3 ? 60 : 0, boost: 1.3 }),
     async draw(u, t, tb) {
       const img = await loadPlate('eye', Math.round((2.0 + tb) * FPS) + 1);
       drawPlate(img, 1.02, 0, 0, 0.86);
@@ -337,12 +330,7 @@ const BOARDS = [
   },
   { // 4 — red eye, the dot now white
     id: 4, start: 5.4, end: 6.6,
-    fx: (u, t) => ({ grain: 0.18, static: 0.14, comb: 0.07,
-                     warp: 0.050 + blurPulse(t, 1.5, 0.34, 0.045),
-                     drag: 22 + blurPulse(t, 0.66, 0.15, 72),
-                     tear: u > 0.8 ? 0.45 : 0,
-                     flash: u > 0.85 ? 0.4 : 0,
-                     blur: blurPulse(t, 1.05, 0.38, 11.0) }),
+    fx: () => ({ boost: 1.0 }),
     async draw(u, t, tb) {
       const img = await loadPlate('eye', Math.round((4.0 + tb) * FPS) + 1);
       drawPlate(img, 1.02 + u * 0.06, 0, 0, 0.86);
@@ -354,17 +342,13 @@ const BOARDS = [
     id: 5, start: 6.6, end: 8.2,
     // The S holds for 1.6s, so the tear escalates through it rather than only
     // punching the ends.
-    fx: (u, t) => ({ grain: 0.19, static: 0.10 + 0.22 * u, comb: 0.08,
-                     warp: 0.055 + 0.055 * u * u + blurPulse(t, 1.1, 0.3, 0.040),
-                     drag: 30 + 55 * u + blurPulse(t, 0.54, 0.16, 110),
-                     tear: u < 0.12 ? 0.5 : 0.10 * u,
-                     flash: u < 0.1 ? 0.45 : 0.10 * u,
-                     blur: blurPulse(t, 0.77, 0.30, 13.0) }),
+    // The S is the biggest shape in the intro, so events hit hardest here.
+    fx: () => ({ boost: 1.6, blurBase: 2 }),
+    // Geometry measured off board 5 of the .ai: the visible red spans
+    // 1849x1256px and is clipped at the bottom, which is a 2720px S with its
+    // cap top at y=182, centred at x=951.
     async draw(u, t) {
-      const s = stepped(t);
-      const drift = (hash11(s * 4.1) - 0.5) * 40;
-      // a detail of the letter, not the letter: the frame crops into the bowl
-      hugeGlyph('S', 4200, W * 0.46 + drift, H * 0.92, RED);
+      corruptGlyph(glitchAt(t), t, 'S', 2720, 951, 182);
     },
   },
   { // 6 — back to black, the marker alone
@@ -571,13 +555,76 @@ function boardAt(t) {
   return BOARDS[BOARDS.length - 1];
 }
 
-// ---------------------------------------------------------------- effects
+
+// Type corruption. In the HOT TAKES reference the word sits clean, then during
+// an event it duplicates into two or three copies, each offset, some skewed,
+// some ghosted back, and a horizontal band is sliced out and shifted sideways.
+// Between events it is completely clean — so this does nothing unless an event
+// is running.
+function glitchType(g, t, paint) {
+  if (!g || g.amp < 0.12) { paint({}); return; }
+  const s = Math.floor(t * STEP_FPS);
+  const copies = 1 + Math.floor(hash11(s * 2.31) * 3);
+  for (let i = copies - 1; i >= 0; i--) {
+    paint({
+      dx:    i === 0 ? 0 : (hash11(s * 3.11 + i * 7.7) - 0.5) * 300 * g.amp,
+      dy:    i === 0 ? 0 : (hash11(s * 5.33 + i * 3.3) - 0.5) * 240 * g.amp,
+      skew:  (hash11(s * 4.71 + i * 2.1) - 0.5) * 0.40 * g.amp,
+      alpha: i === 0 ? 1 : 0.28 + 0.45 * hash11(s * 9.13 + i * 1.9),
+    });
+  }
+  if (hash11(s * 6.73) < 0.55) {                       // sliced band
+    const y0 = hash11(s * 8.31) * H * 0.75;
+    const h  = 60 + hash11(s * 2.91) * 260;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, y0, W, h); ctx.clip();
+    paint({ dx: (hash11(s * 1.77) - 0.5) * 420 * g.amp });
+    ctx.restore();
+  }
+}
+
+// Paint a huge glyph through the corruption, by its cap box.
+function corruptGlyph(g, t, ch, fontPx, cx, capTopPx, color = RED) {
+  glitchType(g, t, ({ dx = 0, dy = 0, skew = 0, alpha = 1 }) => {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.transform(1, 0, skew, 1, dx, dy);
+    glyphAtCap(ch, fontPx, cx, capTopPx, color);
+    ctx.restore();
+  });
+}
+
+// ---------------------------------------------------------------- glitch events
 //
-// One fullscreen pass. Chroma leak is edge-local and additive, not a global
-// channel translate — measured on the BEAMS reference, whose global per-channel
-// offset is 0px while its fringing sits only on high-contrast edges. Modelling
-// it additively also means it works on a pure-red source, where simply shifting
-// the blue channel would do nothing at all (there is no blue to shift).
+// The references are not continuously broken. TENDU and HOT TAKES both sit
+// clean for long stretches and then corrupt for a few frames. So the heavy
+// effects are discrete events on an irregular ~2-3s cadence, and only grain,
+// fine lines and a trace of warp run continuously underneath.
+
+const EVENTS = (() => {
+  const out = [];
+  let t = 0.55, i = 0;
+  while (t < 40) {
+    const dur = 0.10 + hash11(i * 3.17) * 0.28;         // 2-9 frames at 24fps
+    out.push({ t0: t, t1: t + dur, kind: Math.floor(hash11(i * 11.71) * 4), seed: i });
+    t += dur + 1.5 + hash11(i * 7.31) * 1.7;            // 1.5-3.2s of calm
+    i++;
+  }
+  return out;
+})();
+
+// Envelope: snap in, decay out — glitches do not ease.
+function glitchAt(t) {
+  for (const e of EVENTS) {
+    if (t >= e.t0 && t < e.t1) {
+      const u = (t - e.t0) / (e.t1 - e.t0);
+      return { ...e, u, amp: Math.pow(1 - u, 0.6) };
+    }
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------- effects
 
 const VERT = `#version 300 es
 void main(){
@@ -587,9 +634,12 @@ void main(){
 
 const FRAG = `#version 300 es
 precision highp float;
-uniform sampler2D uSrc;
+uniform sampler2D uSrc, uSrcB;
 uniform vec2  uRes;
-uniform float uFrame, uStep, uTear, uWarp, uDrag, uComb, uGrain, uStatic, uBlur;
+uniform float uFrame, uStep;
+uniform float uWarp, uDragX, uDragY, uSlice, uComb;
+uniform float uBlurBase, uBlurAmp, uFocusDir;
+uniform float uLines, uGrain, uNoise;
 out vec4 fragColor;
 
 float hash11(float p){ p=fract(p*0.1031); p*=p+33.33; p*=p+p; return fract(p); }
@@ -597,10 +647,9 @@ float hash21(vec2 p){ vec3 q=fract(vec3(p.xyx)*0.1031); q+=dot(q,q.yzx+33.33); r
 vec3  tex(vec2 uv){ return texture(uSrc, clamp(uv, 0.0, 1.0)).rgb; }
 float luma(vec3 c){ return dot(c, vec3(0.2126,0.7152,0.0722)); }
 
-// Serpentine tape warp. Traced off TENDU frame 0009: a stripe wanders +/-142px
-// on a 1422px frame (rms 70px), and a single sine explains only 36% of that —
-// it is several octaves summed. The measured periods, 617 / 308 / 206 / 103px
-// on a 792px frame, scale to roughly frame-height / 3 / 6 here.
+// Serpentine tape warp — traced off TENDU frame 0009: a stripe wanders +/-10%
+// of frame width, and a single sine explains only 36% of it, so it is summed
+// octaves at roughly frame-height, /3, /6 and /12.
 float warp(float y, float t){
   float w = sin(y * 6.2831 / 1440.0 + t * 0.70)
      + 0.45 * sin(y * 6.2831 /  480.0 + t * 1.30 + 1.7)
@@ -609,14 +658,21 @@ float warp(float y, float t){
   return w / 1.77;
 }
 
-// Directional drag plus defocus in one pass. A trailing smear is approximated
-// as a disc offset half its length and stretched along x, which costs one loop
-// instead of two and is indistinguishable at these radii.
-vec3 softSample(vec2 uv, float dragPx, float blurPx){
-  float rx = blurPx + abs(dragPx) * 0.5;
-  float ry = blurPx;
+// A smooth focal gradient across the frame, in an arbitrary direction: one side
+// sharp, the other soft, as in the blur references where SEVE is defocused and
+// RE is not, or the S is sharp left and soft right.
+float focusField(vec2 uv){
+  vec2 d = vec2(cos(uFocusDir), sin(uFocusDir));
+  return smoothstep(-0.45, 0.45, dot(uv - 0.5, d));
+}
+
+// Drag and defocus in one pass. The drag is 2D: the whole-screen reference
+// pulls type into vertical streaks as often as horizontal ones.
+vec3 softSample(vec2 uv, vec2 drag, float blurPx){
+  float rx = blurPx + abs(drag.x) * 0.5;
+  float ry = blurPx + abs(drag.y) * 0.5;
   if(rx < 0.6 && ry < 0.6) return tex(uv);
-  vec2 centre = uv + vec2(dragPx * 0.5 / uRes.x, 0.0);
+  vec2 centre = uv + drag * 0.5 / uRes;
   vec3 acc = vec3(0.0);
   const int N = 14;
   for(int i = 0; i < N; i++){
@@ -631,38 +687,39 @@ vec3 softSample(vec2 uv, float dragPx, float blurPx){
 void main(){
   vec2 uv = gl_FragCoord.xy / uRes;
   uv.y = 1.0 - uv.y;
+  vec2 uvStable = uv;
   float y = (1.0 - uv.y) * uRes.y;
   float tSec = uFrame / 24.0;
 
-  // 1. the warp — the dominant move, smooth and continuous
   uv.x += warp(y, tSec * 2.4) * uWarp;
 
-  // 2. a much rarer hard tear: a few narrow bands only, not the whole frame
-  if(uTear > 0.0){
-    float band = floor(y / mix(18.0, 46.0, hash11(uStep * 3.7)));
-    float r = hash11(band * 7.13 + uStep * 11.7);
-    if(r > 1.0 - 0.18 * uTear)
-      uv.x += (hash11(band * 3.1 + uStep * 5.3) - 0.5) * 0.30 * uTear;
+  // Narrow slices only — a handful of 12-40px bands, never the whole frame.
+  if(uSlice > 0.0){
+    float band = floor(y / mix(12.0, 40.0, hash11(uStep * 3.7)));
+    if(hash11(band * 7.13 + uStep * 11.7) > 1.0 - 0.14 * uSlice)
+      uv.x += (hash11(band * 3.1 + uStep * 5.3) - 0.5) * 0.22 * uSlice;
   }
 
-  // 3. drag and defocus, sampled together
-  float dragDir = hash11(floor(y / 90.0) * 2.7 + uStep * 1.3) < 0.5 ? -1.0 : 1.0;
-  vec3 c = softSample(uv, uDrag * dragDir, uBlur);
+  float blurPx = uBlurBase + uBlurAmp * focusField(uv);
+  float dirSign = hash11(floor(y / 110.0) * 2.7 + uStep * 1.3) < 0.5 ? -1.0 : 1.0;
+  vec3 c = softSample(uv, vec2(uDragX * dirSign, uDragY), blurPx);
 
-  // 4. fine vertical comb — measured at ~6% modulation depth
+  // The stable layer never warps, drags or slices — the dot holds its place.
+  vec4 b = texture(uSrcB, clamp(uvStable, 0.0, 1.0));
+  c = mix(c, b.rgb, b.a);
+
+  // Fine vertical comb, ~6% modulation as measured.
   if(uComb > 0.0)
     c *= 1.0 - uComb * 0.5 * (0.5 + 0.5 * sin(gl_FragCoord.x * 2.0944));
 
-  // 5. analog snow and dropout bands, regenerated every frame at 24
-  if(uStatic > 0.0){
-    float row  = floor(gl_FragCoord.y);
-    float segW = mix(2.0, 10.0, hash21(vec2(row, floor(uFrame) * 0.37)));
-    float seg  = floor(gl_FragCoord.x / segW);
-    c += (hash21(vec2(seg, row * 1.7 + uFrame * 13.0)) - 0.45) * uStatic * 0.60;
-    if(hash21(vec2(row, floor(uFrame))) < uStatic * 0.10){
-      float sx = hash21(vec2(gl_FragCoord.x * 0.35, row + uFrame * 3.0));
-      c += vec3(step(0.55, sx)) * uStatic * 1.10;
-    }
+  // Fine horizontal line dither: 1px lines on a 3px pitch. No thick bars.
+  if(uLines > 0.0)
+    c *= 1.0 - uLines * step(1.5, mod(gl_FragCoord.y, 3.0));
+
+  // Sparse fine snow, never banded.
+  if(uNoise > 0.0){
+    float sn = hash21(gl_FragCoord.xy * 0.5 + vec2(uFrame * 19.7, uFrame * 7.3));
+    c += vec3(step(1.0 - uNoise * 0.06, sn)) * 0.5;
   }
 
   if(uGrain > 0.0){
@@ -673,7 +730,6 @@ void main(){
 
   fragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
 }`;
-
 
 function compile(type, source) {
   const s = gl.createShader(type);
@@ -690,49 +746,78 @@ if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgram
 gl.useProgram(prog);
 
 const U = Object.fromEntries(
-  ['uSrc','uRes','uFrame','uStep','uTear','uWarp','uDrag','uComb','uGrain','uStatic','uBlur']
+  ['uSrc','uSrcB','uRes','uFrame','uStep','uWarp','uDragX','uDragY','uSlice','uComb',
+   'uBlurBase','uBlurAmp','uFocusDir','uLines','uGrain','uNoise']
     .map((n) => [n, gl.getUniformLocation(prog, n)]));
 
-const texture = gl.createTexture();
-gl.bindTexture(gl.TEXTURE_2D, texture);
-for (const p of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, p, gl.CLAMP_TO_EDGE);
-for (const p of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, p, gl.LINEAR);
+function makeTexture(unit) {
+  const t = gl.createTexture();
+  gl.activeTexture(gl.TEXTURE0 + unit);
+  gl.bindTexture(gl.TEXTURE_2D, t);
+  for (const p of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, p, gl.CLAMP_TO_EDGE);
+  for (const p of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, p, gl.LINEAR);
+  return t;
+}
+const texA = makeTexture(0), texB = makeTexture(1);
 gl.uniform1i(U.uSrc, 0);
+gl.uniform1i(U.uSrcB, 1);
 gl.viewport(0, 0, W, H);
 
 // ---------------------------------------------------------------- driver
 
-// ?fx=1.8 scales the whole distortion stack in one go, so intensity variants
-// can be rendered without touching per-board numbers.
 const FX = Number(new URLSearchParams(location.search).get('fx') || 1);
 
 async function renderFrame(n) {
   const t = n / FPS;
   const b = boardAt(t);
   const u = (t - b.start) / (b.end - b.start);
-  const p = b.fx(u, t);
-  for (const k of ['warp', 'drag', 'tear', 'comb', 'static']) {
-    if (p[k]) p[k] *= FX;
+  const base = b.fx(u, t) || {};
+  const g = glitchAt(t);
+
+  // Continuous floor: grain, lines and a trace of warp. Everything else only
+  // exists inside a glitch event.
+  const p = {
+    warp: 0.004, dragX: 0, dragY: 0, slice: 0, comb: 0.05,
+    blurBase: 0, blurAmp: 0, focusDir: hash11(Math.floor(t / 2.7) * 5.3) * 6.283,
+    lines: 0.05, grain: 0.16, noise: 0.10,
+    ...base,
+  };
+
+  if (g) {
+    const a = g.amp * FX * (base.boost ?? 1);
+    if (g.kind === 0) { p.dragY = 90 * a; p.comb += 0.10 * a; }             // vertical streak
+    else if (g.kind === 1) { p.dragX = 120 * a; p.warp += 0.055 * a; }      // horizontal drag
+    else if (g.kind === 2) { p.slice = a; p.warp += 0.030 * a; }            // narrow slices
+    else { p.warp += 0.075 * a; p.comb += 0.08 * a; }                       // hard warp
+    p.grain += 0.05 * a;
+    p.noise += 0.30 * a;
   }
+
+  // A slow, always-present focal gradient, deepening during events.
+  p.blurAmp = (p.blurAmp || 0) + 6 + (g ? 26 * g.amp * FX : 0);
 
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, W, H);
+  ctxB.clearRect(0, 0, W, H);
+  await b.draw(u, t, t - b.start);
+  if (b.drawStable) b.drawStable(u, t, t - b.start);
 
-  const flash = blackFlash(t, p.flash || 0);
-  if (!flash) await b.draw(u, t, t - b.start);
-
-  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, texA);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, texB);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, srcB);
+
   gl.uniform2f(U.uRes, W, H);
   gl.uniform1f(U.uFrame, n);
   gl.uniform1f(U.uStep, Math.floor(t * STEP_FPS));
-  gl.uniform1f(U.uTear,   flash ? 0 : (p.tear   || 0));
-  gl.uniform1f(U.uWarp,   flash ? 0 : (p.warp   || 0));
-  gl.uniform1f(U.uDrag,   flash ? 0 : (p.drag   || 0));
-  gl.uniform1f(U.uComb,   flash ? 0 : (p.comb   || 0));
-  gl.uniform1f(U.uStatic, flash ? 0 : (p.static || 0));
-  gl.uniform1f(U.uBlur,   flash ? 0 : (p.blur || 0));
-  gl.uniform1f(U.uGrain,  p.grain || 0);
+  for (const [k, loc] of [['warp',U.uWarp],['dragX',U.uDragX],['dragY',U.uDragY],
+                          ['slice',U.uSlice],['comb',U.uComb],['blurBase',U.uBlurBase],
+                          ['blurAmp',U.uBlurAmp],['focusDir',U.uFocusDir],
+                          ['lines',U.uLines],['grain',U.uGrain],['noise',U.uNoise]]) {
+    gl.uniform1f(loc, p[k] || 0);
+  }
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   gl.finish();
 }
@@ -741,6 +826,6 @@ await document.fonts.load('500 100px HaasDisp');
 await document.fonts.load('700 100px HaasDisp');
 await document.fonts.ready;
 
-window.__render   = renderFrame;
-window.__meta     = { W, H, FPS, duration: DURATION, frames: Math.round(DURATION * FPS) };
-window.__ready    = true;
+window.__render = renderFrame;
+window.__meta   = { W, H, FPS, duration: DURATION, frames: Math.round(DURATION * FPS) };
+window.__ready  = true;
