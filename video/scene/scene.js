@@ -326,14 +326,16 @@ const BOARDS = [
     // The lockup is only up for well under half a second, so the tear punches
     // it in and out and leaves the middle clean enough to actually read.
     fx: (u) => ({ dragY: u < 0.3 ? 60 : 0, comb: u < 0.3 ? 0.24 : 0.084,
-                  boost: 1.3, noWarp: true }),
+                  boost: 0, noWarp: true }),
     async draw(u, t, tb) {
       const img = await loadPlate('eye', Math.round((2.0 + tb) * FPS) + 1);
       drawPlate(img, 1.02, 0, 0, 0.86);
       tintRed();
       // The lockup is on screen for well under half a second, so it always
       // arrives corrupted and settles, rather than waiting for a random event.
-      const g = glitchAt(t) || { amp: 0.6 * Math.max(0, 1 - u / 0.55) };
+      // Only the scripted arrival corruption. A random event landing inside
+      // this 10-frame board stacked a second, much harder glitch on top of it.
+      const g = { amp: 0.6 * Math.max(0, 1 - u / 0.55) };
       glitchType(g, t, ({ dx = 0, dy = 0, skew = 0, alpha = 1 }) => {
         ctx.save();
         ctx.globalAlpha = alpha;
@@ -367,11 +369,11 @@ const BOARDS = [
     // Geometry measured off board 5 of the .ai: the visible red spans
     // 1849x1256px and is clipped at the bottom, which is a 2720px S with its
     // cap top at y=182, centred at x=951.
-    // Starts 30% over size and settles to the measured 2720px, scaling about
-    // the centre of its final cap box so it shrinks into place rather than
-    // drifting. Ease-out, so most of the move happens early.
+    // Starts 30% over the measured 2720px and settles at 15% over, so the size
+    // change reads as a drift rather than a zoom. Scales about the centre of its
+    // cap box, ease-out.
     async draw(u, t) {
-      const k = 1 + 0.30 * Math.pow(1 - u, 2);
+      const k = 1.15 + 0.15 * Math.pow(1 - u, 2);   // 1.30 -> 1.15, a slight move
       const capMid = 182 + 2720 * 0.715 / 2;
       corruptGlyph(glitchAt(t), t, 'S', 2720 * k, 951,
                    capMid - 2720 * k * 0.715 / 2);
@@ -811,6 +813,7 @@ gl.viewport(0, 0, W, H);
 // ---------------------------------------------------------------- driver
 
 const FX = Number(new URLSearchParams(location.search).get('fx') || 1);
+const GRAIN_SCALE = Number(new URLSearchParams(location.search).get('grain') ?? 1);
 
 async function renderFrame(n) {
   const t = n / FPS;
@@ -836,6 +839,8 @@ async function renderFrame(n) {
     else { p.warp += 0.075 * a; p.comb += 0.10 * a; }                       // tape warp
     p.grain += 0.025 * a;
   }
+
+  p.grain = (p.grain || 0) * GRAIN_SCALE;
 
   // Letterforms are never warped: the type corruption and the screen glitches
   // already carry those boards, and bending the shapes on top reads as too much.
