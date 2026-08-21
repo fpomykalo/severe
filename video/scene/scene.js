@@ -97,7 +97,10 @@ function setType(px, weight = 500, tracking = 0) {
   ctx.letterSpacing = `${tracking}px`;
 }
 
-function dot(x, y, color = RED, target = ctxB) {
+// Dots live on the distorted layer, so they break up with the copy around
+// them. (They were on the stable layer only while the serpentine warp existed,
+// which dragged them across the frame; that warp is gone.)
+function dot(x, y, color = RED, target = ctx) {
   target.fillStyle = color;
   target.beginPath();
   target.arc(x, y, DOT_D / 2, 0, Math.PI * 2);
@@ -172,11 +175,32 @@ const cityStack = (xPt, yPt) => {
     label(c, xPt, yPt + i * 6.98));
 };
 
-// Writes a line out one character at a time. Progress is clamped, so passing a
-// value past 1 simply leaves the finished line on screen.
-function typeOut(text, xPt, yPt, progress, opts = {}) {
-  const n = Math.round(Math.max(0, Math.min(1, progress)) * text.length);
-  if (n > 0) label(text.slice(0, n), xPt, yPt, opts);
+// The site's scramble-in, lifted from js/main3.js and rewritten as a pure
+// function of elapsed time so it renders identically on every pass. Same
+// alphabet and the same perChar / dur / flip numbers the site uses.
+const SCRAMBLE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#$%&/*+=-';
+const rndChar = (tick, i) =>
+  SCRAMBLE_CHARS[Math.abs(tick * 13 + i * 7 + ((tick * i) | 0)) % SCRAMBLE_CHARS.length];
+const scrambleable = (ch) => /[A-Za-z0-9@.]/.test(ch);
+
+function scrambled(text, ms, { perChar = 25, dur = 400, flip = 45, seed = 0 } = {}) {
+  if (ms < 0) return '';
+  const tick = Math.floor(ms / flip);
+  let out = '';
+  for (let i = 0; i < text.length; i++) {
+    const si = i * perChar;
+    if (ms < si) break;
+    const ch = text[i];
+    out += (ms >= si + dur) ? ch
+         : (scrambleable(ch) ? rndChar(tick, i + seed) : ch);
+  }
+  return out;
+}
+
+// Draw a line as it scrambles in. `sec` is seconds since the line started.
+function writeLine(text, xPt, yPt, sec, opts = {}) {
+  const out = scrambled(text, sec * 1000, opts);
+  if (out) label(out, xPt, yPt, opts);
 }
 
 // A scripted burst for the transitions the storyboard calls for, as opposed to
@@ -187,7 +211,7 @@ const burst = (u, at, width) => Math.max(0, 1 - Math.abs(u - at) / width);
 // 10-13 share this field; `full` adds the pair the denser boards carry.
 // `write` staggers the eight blocks so the field types itself on rather than
 // snapping in; pass 1 (the default) for the finished state.
-function typeField(full, { color = RED, write = 1 } = {}) {
+function typeField(full, { color = RED, write = 99 } = {}) {
   const lines = [
     [COPY.line,   258.83, 208.96, 0],
     [COPY.cities, 270.27,  78.47, 0],
@@ -199,30 +223,34 @@ function typeField(full, { color = RED, write = 1 } = {}) {
     [COPY.line,     8.86,  27.05, -Math.PI / 2],
   ];
   if (full) lines.push([COPY.line, 244.19, 41.43, 0]);
+  // `write` is seconds since the field started arriving; the blocks are
+  // staggered so it assembles rather than snapping on.
   lines.forEach(([txt, x, y, dir], i) => {
-    const start = (i / lines.length) * 0.55;
-    typeOut(txt, x, y, (write - start) / 0.45, { dir, color });
+    writeLine(txt, x, y, write - i * 0.13, { dir, color, seed: i * 17 });
   });
-  if (write > 0.55) dot(264.5 * PT, 80.6 * PT, color);
-  if (write > 0.70) dot(234.0 * PT, 246.3 * PT, color);
+  if (write > 0.9) dot(264.5 * PT, 80.6 * PT, color);
+  if (write > 1.1) dot(234.0 * PT, 246.3 * PT, color);
 }
 
 // Record / pause / fast-forward, as they sit under the S on board 20.
-function transportMarks(x, y, h, target = ctx) {
-  const ctx = target;
-  ctx.save();
-  ctx.fillStyle = RED;
-  ctx.beginPath(); ctx.arc(x + h * 0.4, y + h * 0.5, h * 0.4, 0, Math.PI * 2); ctx.fill();
-  const px = x + h * 1.6;
-  ctx.fillRect(px, y, h * 0.26, h);
-  ctx.fillRect(px + h * 0.45, y, h * 0.26, h);
-  const fx = x + h * 3.0;
+// Record / pause / fast-forward, laid out to fill a given box. Board 20's box
+// is measured off the .ai: x 569.6..899.5, y 1150.0..1255.4 in master pixels.
+function transportMarks(x, y, w, h, color = RED, target = ctx) {
+  const g = target;
+  g.save();
+  g.fillStyle = color;
+  const u = w / 3.30;                       // the box is 3.30 units wide
+  g.beginPath(); g.arc(x + h * 0.5, y + h * 0.5, h * 0.5, 0, Math.PI * 2); g.fill();
+  const px = x + u * 1.30;
+  g.fillRect(px, y, h * 0.30, h);
+  g.fillRect(px + h * 0.55, y, h * 0.30, h);
+  const fx = x + u * 2.30;
   for (const o of [0, h * 0.62]) {
-    ctx.beginPath();
-    ctx.moveTo(fx + o, y); ctx.lineTo(fx + o + h * 0.55, y + h * 0.5); ctx.lineTo(fx + o, y + h);
-    ctx.closePath(); ctx.fill();
+    g.beginPath();
+    g.moveTo(fx + o, y); g.lineTo(fx + o + h * 0.55, y + h * 0.5); g.lineTo(fx + o, y + h);
+    g.closePath(); g.fill();
   }
-  ctx.restore();
+  g.restore();
 }
 
 // Horizontal lockup, specified by cap height and centre — the way the .ai
@@ -281,12 +309,14 @@ const treeFrame = (tb, offset) => Math.round((offset + tb * TREE_RATE) * FPS) + 
 // Boards 9 and 10 are one continuous move, not two frames: the huge vertical
 // lockup starts on S/E/V and climbs until E/R fills the frame. Sharing the
 // travel between them keeps it from reading as a replacement cut.
-const SEV_IN = 11.6, SEV_OUT = 13.3;
+const SEV_IN = 11.8, SEV_OUT = 13.8;
 
 function lockupClimb(t) {
   const v = Math.max(0, Math.min(1, (t - SEV_IN) / (SEV_OUT - SEV_IN)));
-  const y = -300 - 2400 * v;
-  const x = 711 + 159 * v;
+  // 70% slower than the first attempt, and purely vertical — the horizontal
+  // travel it used to carry read as the letters sliding sideways.
+  const y = -300 - 720 * v;
+  const x = 711;
   glitchType(glitchAt(t), t, ({ dx = 0, dy = 0, skew = 0, alpha = 1 }) => {
     ctx.save();
     ctx.globalAlpha = alpha;
@@ -294,6 +324,23 @@ function lockupClimb(t) {
     hugeVertical(x, y, 845);
     ctx.restore();
   }, 0.7);
+}
+
+// The closing copy starts scrambling on the moment the centre lockup lands and
+// keeps building across boards 16, 17 and 18, rather than restarting per board.
+const COPY_IN = 20.8;
+
+function copyBlock(t, { full = false } = {}) {
+  const sec = t - COPY_IN;
+  writeLine(COPY.line,   179.46, 209.65, sec - 0.55, { seed: 3 });
+  writeLine(COPY.cities, 148.49,  79.16, sec - 1.05, { seed: 11 });
+  writeLine(COPY.deploy, 122.41,  86.14, sec - 1.35, { seed: 19 });
+  if (sec > 1.4) dot(143.0 * PT, 81.3 * PT);
+  if (!full) return;
+  writeLine(COPY.cities, 187.43, 244.84, sec - 3.6, { seed: 27 });
+  writeLine(COPY.deploy, 221.20, 251.97, sec - 3.9, { seed: 35 });
+  writeLine(COPY.line,   122.41,  42.13, sec - 4.2, { seed: 43 });
+  if (sec > 4.3) dot(182.0 * PT, 247.0 * PT);
 }
 
 // ---------------------------------------------------------------- timeline
@@ -331,13 +378,13 @@ function blackFlash(t, rate) {
 
 const BOARDS = [
   { // 1 — black, the dot starts blinking
-    id: 1, start: 0.0, end: 3.0,
+    id: 1, start: 0.0, end: 2.0,
     fx: () => ({ boost: 0.7 }),
     async draw() {},
     drawStable(u, t) { if (dotOn(t)) dot(W / 2, H / 2); },
   },
   { // 2 — distortion, then the eye. Black and white, the dot still on it.
-    id: 2, start: 3.0, end: 5.0,
+    id: 2, start: 2.0, end: 4.0,
     // The storyboard's own beat: the screen distorts, then the eye is there.
     // Scripted, not one of the random events.
     fx: (u) => {
@@ -353,7 +400,7 @@ const BOARDS = [
     },
   },
   { // 3 — red, and the vertical wordmark for well under half a second
-    id: 3, start: 5.0, end: 5.4,
+    id: 3, start: 4.0, end: 4.4,
     // The lockup is only up for well under half a second, so the tear punches
     // it in and out and leaves the middle clean enough to actually read.
     fx: (u) => ({ dragY: u < 0.3 ? 60 : 0, comb: u < 0.3 ? 0.24 : 0.084, boost: 0 }),
@@ -376,7 +423,7 @@ const BOARDS = [
     },
   },
   { // 4 — red eye, the dot now white
-    id: 4, start: 5.4, end: 6.6,
+    id: 4, start: 4.4, end: 5.6,
     fx: () => ({ boost: 1.0 }),
     async draw(u, t, tb) {
       const img = await loadPlate('eye', Math.round((4.0 + tb) * FPS) + 1);
@@ -386,7 +433,7 @@ const BOARDS = [
     },
   },
   { // 5 — into the S. The shape is big enough for the chroma leak to read.
-    id: 5, start: 6.6, end: 8.2,
+    id: 5, start: 5.6, end: 7.2,
     // The S holds for 1.6s, so the tear escalates through it rather than only
     // punching the ends.
     // The S is the biggest shape in the intro, so events hit hardest here.
@@ -410,56 +457,58 @@ const BOARDS = [
     },
   },
   { // 6 — back to black, the marker alone
-    id: 6, start: 8.2, end: 8.9,
+    id: 6, start: 7.2, end: 7.8,
     fx: () => ({ boost: 0.8, sharp: true }),
     async draw() { label('S.', 177.40, 139.34); },
   },
   { // 7 — the cities arrive next to it
-    id: 7, start: 8.9, end: 10.1,
+    id: 7, start: 7.8, end: 8.8,
     fx: () => ({ boost: 0.9, sharp: true }),
-    async draw() { label('S.', 177.40, 139.34); cityStack(197.27, 139.34); },
+    // The cities scramble in one after another, beginning the moment the S. is
+    // on screen rather than waiting for this board.
+    async draw(u, t) {
+      label('S.', 177.40, 139.34);
+      const sec = t - 7.35;
+      ['London', 'New York', 'Detroit'].forEach((c, i) =>
+        writeLine(c, 197.27, 139.34 + i * 6.98, sec - i * 0.16, { seed: i * 23 }));
+    },
   },
   { // 8 — the radial composition: Deployed / Globally on 45deg steps
-    id: 8, start: 10.1, end: 11.6,
+    id: 8, start: 8.8, end: 11.8,
     fx: () => ({ boost: 1.0, sharp: true }),
     async draw(u) {
+      const b8start = 8.8, b8end = 11.8;
       label('S.', 177.40, 139.34); cityStack(197.27, 139.34);
-      // The eight labels appear one at a time over the first half, then the
-      // whole arrangement turns a single 45deg step, so each label ends on its
-      // neighbour's mark: Globally lands where the top Deployed was.
+      // The eight labels scramble in one at a time, then the whole arrangement
+      // turns a single 45deg step so each lands on its neighbour's mark:
+      // Globally ends where the top Deployed was. The board is 3s rather than
+      // 1.5s, so the same 45deg travel happens at half the previous rate.
       const rot = u * Math.PI / 4;
       for (let i = 0; i < 8; i++) {
-        const appear = (i / 8) * 0.5;
+        const appear = (i / 8) * 0.42;
         if (u < appear) continue;
         const a = i * Math.PI / 4 + rot;
-        label(i % 2 ? 'Globally' : 'Deployed',
-              200 + Math.cos(a) * 58, 150 + Math.sin(a) * 58, { dir: a });
+        const txt = i % 2 ? 'Globally' : 'Deployed';
+        const out = scrambled(txt, (u - appear) * (b8end - b8start) * 1000,
+                              { seed: i * 31 });
+        if (out) label(out, 200 + Math.cos(a) * 58, 150 + Math.sin(a) * 58, { dir: a });
       }
     },
   },
   { // 9 — SEV: the vertical lockup blown up and rotated 180deg, cropped
-    id: 9, start: 11.6, end: 12.4,
-    fx: () => ({ boost: 1.2 }),
+    id: 9, start: 11.8, end: 13.8,
+    // Leaves on a burst of static: the forest arrives straight out of it.
+    fx: (u) => {
+      const b = burst(u, 1.0, 0.10);
+      return { boost: 1.2, comb: 0.084 + 0.6 * b, dragY: 90 * b, dragX: 55 * b };
+    },
     async draw(u, t) {
       lockupClimb(t);
-      typeField(true, { write: (t - SEV_IN) / 1.5 });
+      typeField(true, { write: t - SEV_IN });
     },
-  },
-  { // 10 — ER, with the copy stacked around it
-    id: 10, start: 12.4, end: 13.3,
-    fx: () => ({ boost: 1.2 }),
-    async draw(u, t) {
-      lockupClimb(t);
-      typeField(true, { write: (t - SEV_IN) / 1.5 });
-    },
-  },
-  { // 11 — the type field alone
-    id: 11, start: 13.3, end: 14.4,
-    fx: () => ({ boost: 1.0 }),
-    async draw() { typeField(true); },
   },
   { // 12 — the trees, black and white
-    id: 12, start: 14.4, end: 16.2,
+    id: 12, start: 13.8, end: 15.8,
     // The trees arrive the way the eye did: the screen breaks, then they are
     // there. Scripted, not one of the random events.
     fx: (u) => {
@@ -473,34 +522,25 @@ const BOARDS = [
     },
   },
   { // 13 — the same trees, red
-    id: 13, start: 16.2, end: 17.8,
+    id: 13, start: 15.8, end: 18.8,
     fx: () => ({ boost: 1.0 }),
     async draw(u, t, tb) {
       drawPlate(await loadPlate('trees', treeFrame(tb, 1.39)), 1.03, 0, 0, 0.9);
       tintRed();
       typeField(true, { color: '#fff' });          // white over the red plate
-    },
-  },
-  { // 14 — five white lockups down the 9:16 column
-    id: 14, start: 17.8, end: 19.4,
-    fx: () => ({ boost: 1.2 }),
-    async draw(u, t, tb) {
-      drawPlate(await loadPlate('trees', treeFrame(tb, 2.27)), 1.03, 0, 0, 0.9);
-      tintRed();
-      typeField(true, { color: '#fff' });          // the copy carries over
-      // The middle lockup lands first; the pairs above and below duplicate out
-      // of it rather than the whole stack arriving at once.
+      // The lockups begin the moment the plate turns red. The middle lands
+      // first; the pairs follow 30% sooner than they used to.
       const cx = SAFE_V.x + SAFE_V.w / 2;
       wordmark(cx, 46 + 2 * 311, 110, '#fff');
-      if (u > 0.22) { wordmark(cx, 46 + 311, 110, '#fff');
-                      wordmark(cx, 46 + 3 * 311, 110, '#fff'); }
-      if (u > 0.42) { wordmark(cx, 46, 110, '#fff');
-                      wordmark(cx, 46 + 4 * 311, 110, '#fff'); }
-      transportMarks(SAFE_V.x + SAFE_V.w - 96, 108, 22);
+      if (u > 0.107) { wordmark(cx, 46 + 311, 110, '#fff');
+                       wordmark(cx, 46 + 3 * 311, 110, '#fff'); }
+      if (u > 0.206) { wordmark(cx, 46, 110, '#fff');
+                       wordmark(cx, 46 + 4 * 311, 110, '#fff'); }
+      transportMarks(SAFE_V.x + SAFE_V.w - 110, 96, 92, 20, '#fff');
     },
   },
   { // 15 — back to black and white, the stack alternating red and white
-    id: 15, start: 19.4, end: 20.8,
+    id: 15, start: 18.8, end: 20.8,
     // The red drops away on a burst of static rather than a cut.
     fx: (u) => {
       const b = burst(u, 0.0, 0.10);
@@ -534,79 +574,77 @@ const BOARDS = [
         wordmark(969, 719, 141.7);
         ctx.restore();
       });
+      copyBlock(t);                       // starts here, not two boards later
     },
   },
   { // 17 — the copy starts building around it
-    id: 17, start: 22.8, end: 24.0,
+    id: 17, start: 22.8, end: 24.2,
     fx: () => ({ boost: 0.8, sharp: true }),
-    async draw(u) {
+    async draw(u, t) {
       wordmark(969, 719, 141.7);
-      typeOut(COPY.line,   179.46, 209.65, u / 0.45);
-      typeOut(COPY.cities, 148.49,  79.16, (u - 0.20) / 0.45);
-      typeOut(COPY.deploy, 122.41,  86.14, (u - 0.34) / 0.45);
-      if (u > 0.30) dot(143.0 * PT, 81.3 * PT);
+      copyBlock(t);
     },
   },
   { // 18 — and completes
-    id: 18, start: 24.0, end: 25.4,
+    id: 18, start: 24.2, end: 25.6,
     // Exits on a static burst: this is the cut from the lockup to the big S.
     fx: (u) => {
       const b = burst(u, 1.0, 0.12);
       return { boost: 0.8, sharp: b < 0.05, comb: 0.084 + 0.6 * b,
                dragY: 85 * b, dragX: 50 * b };
     },
-    async draw(u) {
+    async draw(u, t) {
       wordmark(969, 719, 141.7);
-      label(COPY.line,   179.46, 209.65);
-      label(COPY.cities, 148.49,  79.16);
-      label(COPY.deploy, 122.41,  86.14);
-      typeOut(COPY.cities, 187.43, 244.84, u / 0.4);
-      typeOut(COPY.deploy, 221.20, 251.97, (u - 0.18) / 0.4);
-      typeOut(COPY.line,   122.41,  42.13, (u - 0.34) / 0.4);
-      dot(143.0 * PT, 81.3 * PT);
-      if (u > 0.3) dot(182.0 * PT, 247.0 * PT);
+      copyBlock(t, { full: true });
     },
   },
   { // 19 — the black beat
-    id: 19, start: 25.4, end: 26.0,
+    id: 19, start: 25.6, end: 26.2,
     fx: () => ({ boost: 0, grain: 0.20 }),
     async draw() {},
   },
   { // 20 — the big S with its trademark, and the transport marks
-    id: 20, start: 26.0, end: 28.6,
+    id: 20, start: 26.2, end: 28.8,
     // Same one-sided defocus as the cropped S, and the same size drift.
     fx: (u) => ({
       boost: 1.6,
       blurAmp: 74 * Math.max(0, Math.sin((u - 0.14) / 0.46 * Math.PI)),
     }),
+    // The trademark and the marks are drawn straight, on the stable layer.
+    // The letter holds its size and place. Measured off board 20 of the .ai:
+    // the S occupies x 516.0..1402.9, y 182.6..1256.6 -- 886.9 x 1074.0px.
     async draw(u, t) {
-      const k = 1.12 + 0.12 * Math.pow(1 - u, 2);
       glitchType(glitchAt(t), t, ({ dx = 0, dy = 0, skew = 0, alpha = 1 }) => {
         ctx.save();
         ctx.globalAlpha = alpha;
         ctx.transform(1, 0, skew, 1, dx, dy);
-        ctx.translate(959, 719);
-        ctx.scale(k, k);
-        ctx.translate(-959, -719);
-        glyphAtCap('S', 1501, 959, 719 - 1073 / 2);
+        // Sized to the .ai's *visible* box (x516..1403, y183..1257), not to
+        // cap height: a round S overshoots cap and baseline, so sizing by cap
+        // alone rendered it 4% oversized and pushed its lower-left curve onto
+        // the transport marks.
+        glyphAtCap('S', 1440, 966, 201.4);
         ctx.restore();
       });
     },
     // The trademark and the transport marks live on the stable layer, so the
     // defocus and the corruption hit the letter alone and leave them clean.
     drawStable() {
+      // Both measured off board 20 rather than estimated: the trademark is
+      // 38x18px with its top at y=200, and the transport marks are 92x20px at
+      // (570, 1225) -- small enough to sit clear of the S's lower-left curve,
+      // which is where they collided before.
       ctxB.save();
-      ctxB.font = `700 ${1501 * 0.115}px HaasDisp, sans-serif`;
+      ctxB.font = '700 65px HaasDisp, sans-serif';
       ctxB.fillStyle = RED;
       ctxB.textAlign = 'left';
       ctxB.textBaseline = 'alphabetic';
-      ctxB.fillText('™', 1310, 268);
+      ctxB.fillText('™', 1308, 247);
       ctxB.restore();
-      transportMarks(576, 1224, 26, ctxB);
+      transportMarks(570, 1225, 92, 20, RED, ctxB);
     },
   },
   { // 21 — the lockup, small
-    id: 21, start: 28.6, end: 32.0,
+    id: 21, start: 28.8, end: 32.2,
     // Holds, then leaves on a burst of static rather than a cut.
     fx: (u) => {
       const b = burst(u, 1.0, 0.09);
@@ -618,7 +656,7 @@ const BOARDS = [
     },
   },
   { // 22 — out
-    id: 22, start: 32.0, end: 33.0,
+    id: 22, start: 32.2, end: 33.2,
     fx: (u) => ({ boost: 0, grain: 0.234 * (1 - u), comb: 0.084 * (1 - u) }),
     async draw() {},
   },
@@ -851,7 +889,7 @@ const FX = Number(new URLSearchParams(location.search).get('fx') || 1);
 // Grain is off by default so the film can be graded and textured downstream.
 // Nothing about it has been deleted: render with ?grain=1 to bring it back at
 // the tuned settings (1.10px cell, amplitude 0.234, scintillating in place).
-const GRAIN_SCALE = Number(new URLSearchParams(location.search).get('grain') ?? 0);
+const GRAIN_SCALE = Number(new URLSearchParams(location.search).get('grain') ?? 1);
 
 async function renderFrame(n) {
   const t = n / FPS;

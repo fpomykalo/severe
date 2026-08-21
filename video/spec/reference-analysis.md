@@ -213,3 +213,47 @@ duplication, offset, skew, ghosting and sliced bands.
   contrast 24 and 21 against the letter's 6.
 - **The end card holds two seconds longer** (28.6–32.0s) and leaves on a glitch.
   Total running time is now **33s**.
+
+
+## Fourth pass
+
+- **Copy uses the site's own scramble.** `scrambleText` from `js/main3.js`,
+  ported to a pure function of elapsed time so it renders identically every
+  pass. Same alphabet, same perChar 25 / dur 400 / flip 45.
+- **Dots are back on the distorted layer**, so they break up with the copy
+  around them. They only needed the stable layer while the serpentine warp
+  existed, which dragged them across the frame; that warp is gone.
+- **Board 20 geometry, measured properly.** The first attempt used bounding
+  boxes contaminated by the S's own stroke, which made the transport marks
+  330x105px instead of 92x20 and the trademark 172px instead of 38x18. Both are
+  now measured from isolated crops.
+- **The S was 4% oversized because of overshoot.** A round S extends past both
+  cap height and baseline, so sizing it by cap height alone rendered a 1120px
+  tall letter where the .ai has 1074, and its lower-left curve ran over the
+  transport marks. Sized to the *visible* box instead: font 1440 at (966, 201.4)
+  gives x519..1401, y183..1256 against the file's x516..1403, y183..1257, and
+  the S's ink on the marks' row now starts at x=794 against marks ending at 662.
+
+### Timeline (33.2s)
+
+| board | in | note |
+|---|---|---|
+| 1 | 0.0 | dot |
+| 2 | 2.0 | eye |
+| 3 | 4.0 | lockup flash |
+| 4 | 4.4 | eye, red |
+| 5 | 5.6 | cropped S |
+| 6 | 7.2 | S. |
+| 7 | 7.8 | cities scramble in |
+| 8 | 8.8 | radial: one at a time, then 45° at half the previous rate |
+| 9 | 11.8 | SEV climbs, 70% slower and purely vertical; type field scrambles on |
+| 12 | 13.8 | forest, straight out of the glitch |
+| 13 | 15.8 | red plate, white copy, lockups start immediately |
+| 15 | 18.8 | back to black and white, copy red, middle lockup gone |
+| 16 | 20.8 | the reveal; closing copy starts here |
+| 17 | 22.8 | copy builds |
+| 18 | 24.2 | copy completes, exits on static |
+| 19 | 25.6 | black |
+| 20 | 26.2 | big S, fixed size and position |
+| 21 | 28.8 | end card |
+| 22 | 32.2 | out |
