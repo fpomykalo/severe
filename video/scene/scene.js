@@ -228,8 +228,13 @@ function typeField(full, { color = RED, write = 99 } = {}) {
   lines.forEach(([txt, x, y, dir], i) => {
     writeLine(txt, x, y, write - i * 0.13, { dir, color, seed: i * 17 });
   });
-  if (write > 0.9) dot(264.5 * PT, 80.6 * PT, color);
-  if (write > 1.1) dot(234.0 * PT, 246.3 * PT, color);
+  // Measured off boards 11 and 12 of the .ai. The lower bullet belongs at
+  // x1583.7, not x1123 — at x1123 it sat inside the big letterform's column,
+  // which is why the climbing type kept covering it.
+  if (write > 0.9) dot(1182.5,  392.8, color);
+  if (write > 1.1) dot(1583.7, 1187.8, color);
+  if (write > 1.3) dot(  55.3,  925.4, color);
+  if (write > 1.5) dot(  53.6, 1378.1, color);
 }
 
 // Record / pause / fast-forward, as they sit under the S on board 20.
@@ -340,7 +345,7 @@ function lockupClimb(t) {
 
 // The closing copy starts scrambling on the moment the centre lockup lands and
 // keeps building across boards 16, 17 and 18, rather than restarting per board.
-const COPY_IN = 20.8;
+const COPY_IN = 19.2;
 
 function copyBlock(t) {
   const sec = t - COPY_IN;
@@ -554,7 +559,7 @@ const BOARDS = [
     },
   },
   { // 15 — back to black and white, the stack alternating red and white
-    id: 15, start: 17.0, end: 20.8,
+    id: 15, start: 17.0, end: 19.2,
     // The red drops away on a burst of static rather than a cut.
     fx: (u) => {
       const b = burst(u, 0.0, 0.10);
@@ -573,7 +578,7 @@ const BOARDS = [
   },
   { // 16 — the reveal. Cosmos treatment: the lockup multiplies, offsets and
     //      shreds on the 12fps step, over black.
-    id: 16, start: 20.8, end: 22.8,
+    id: 16, start: 19.2, end: 21.2,
     fx: () => ({ boost: 1.5 }),
     async draw(u, t) {
       // The lockup arrives shredded and resolves: a scripted envelope over the
@@ -591,7 +596,7 @@ const BOARDS = [
     },
   },
   { // 17 — the copy starts building around it
-    id: 17, start: 22.8, end: 24.2,
+    id: 17, start: 21.2, end: 22.6,
     fx: () => ({ boost: 0.8, sharp: true }),
     async draw(u, t) {
       wordmark(969, 719, 141.7);
@@ -599,7 +604,7 @@ const BOARDS = [
     },
   },
   { // 18 — and completes
-    id: 18, start: 24.2, end: 25.6,
+    id: 18, start: 22.6, end: 24.0,
     // Exits on a static burst: this is the cut from the lockup to the big S.
     fx: (u) => {
       const b = burst(u, 1.0, 0.12);
@@ -612,12 +617,12 @@ const BOARDS = [
     },
   },
   { // 19 — the black beat
-    id: 19, start: 25.6, end: 26.2,
+    id: 19, start: 24.0, end: 24.6,
     fx: () => ({ boost: 0, grain: 0.20 }),
     async draw() {},
   },
   { // 20 — the big S with its trademark, and the transport marks
-    id: 20, start: 26.2, end: 28.8,
+    id: 20, start: 24.6, end: 27.2,
     // Same one-sided defocus as the cropped S, and the same size drift.
     fx: (u) => {
       const b = burst(u, 1.0, 0.10);          // the cut to the end card
@@ -658,7 +663,7 @@ const BOARDS = [
     },
   },
   { // 21 — the lockup, small
-    id: 21, start: 28.8, end: 32.2,
+    id: 21, start: 27.2, end: 30.6,
     // Holds, then leaves on a burst of static rather than a cut.
     // The last glitch is the hardest in the film: the wordmark is torn apart
     // rather than cut away.
@@ -681,7 +686,7 @@ const BOARDS = [
     },
   },
   { // 22 — out
-    id: 22, start: 32.2, end: 33.2,
+    id: 22, start: 30.6, end: 31.6,
     fx: (u) => ({ boost: 0, grain: 0.234 * (1 - u), comb: 0.084 * (1 - u) }),
     async draw() {},
   },
