@@ -319,32 +319,43 @@ function lockupClimb(t) {
   // Measured off board 9 of the .ai: the big letterform occupies x300.6..1128.7
   // and the small copy resumes at x1129.9. Staying inside that keeps the huge
   // type off the copy instead of running across it.
-  const x = 724.4;
+  const x = 731.4;
+  // Clipped to its own column. In the .ai the big letterform ends at x1131 and
+  // the copy begins at x1150; without the clip a glitch offset (up to 210px)
+  // threw the letterform straight across the copy. The clip guarantees the
+  // layout holds whatever the corruption does.
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, 1140, H);
+  ctx.clip();
   glitchType(glitchAt(t), t, ({ dx = 0, dy = 0, skew = 0, alpha = 1 }) => {
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.transform(1, 0, skew, 1, dx, dy);
     hugeVertical(x, y, 787);
     ctx.restore();
-  }, 0.7);
+  }, 0.35);
+  ctx.restore();
 }
 
 // The closing copy starts scrambling on the moment the centre lockup lands and
 // keeps building across boards 16, 17 and 18, rather than restarting per board.
 const COPY_IN = 20.8;
 
-function copyBlock(t, { full = false } = {}) {
+function copyBlock(t) {
   const sec = t - COPY_IN;
   writeLine(COPY.line,   179.46, 209.65, sec - 0.55, { seed: 3 });
   writeLine(COPY.cities, 148.49,  79.16, sec - 1.05, { seed: 11 });
   writeLine(COPY.deploy, 122.41,  86.14, sec - 1.35, { seed: 19 });
   if (sec > 1.4) dot(143.0 * PT, 81.3 * PT);
-  if (!full) return;
-  // Straight on from the first block finishing, with no dead gap.
-  writeLine(COPY.cities, 187.43, 244.84, sec - 2.45, { seed: 27 });
-  writeLine(COPY.deploy, 221.20, 251.97, sec - 2.75, { seed: 35 });
-  writeLine(COPY.line,   122.41,  42.13, sec - 3.05, { seed: 43 });
-  if (sec > 3.2) dot(182.0 * PT, 247.0 * PT);
+  // The lower pair starts as the upper pair finishes. The longest line above is
+  // 35 characters: 35 x 25ms + 400ms settle = 1.275s, so the last lands at
+  // 2.33s. Nothing is gated on a board boundary now — that gating was the real
+  // gap, not the timings.
+  writeLine(COPY.cities, 187.43, 244.84, sec - 2.35, { seed: 27 });
+  writeLine(COPY.deploy, 221.20, 251.97, sec - 2.65, { seed: 35 });
+  writeLine(COPY.line,   122.41,  42.13, sec - 2.95, { seed: 43 });
+  if (sec > 3.1) dot(182.0 * PT, 247.0 * PT);
 }
 
 // ---------------------------------------------------------------- timeline
@@ -433,7 +444,6 @@ const BOARDS = [
       const img = await loadPlate('eye', Math.round((4.0 + tb) * FPS) + 1);
       drawPlate(img, 1.02 + u * 0.06, 0, 0, 0.86);
       tintRed();
-      dot(W / 2, H / 2, '#fff');
     },
   },
   { // 5 — into the S. The shape is big enough for the chroma leak to read.
@@ -509,7 +519,7 @@ const BOARDS = [
     },
   },
   { // 12 — the trees, black and white
-    id: 12, start: 13.8, end: 15.8,
+    id: 12, start: 13.8, end: 15.0,
     // The trees arrive the way the eye did: the screen breaks, then they are
     // there. Scripted, not one of the random events.
     fx: (u) => {
@@ -523,7 +533,7 @@ const BOARDS = [
     },
   },
   { // 13 — the same trees, red
-    id: 13, start: 15.8, end: 18.8,
+    id: 13, start: 15.0, end: 17.0,
     fx: (u) => {
       const b = burst(u, 0.0, 0.055);
       return { boost: 1.0, comb: 0.084 + 0.6 * b, dragY: 85 * b, dragX: 50 * b };
@@ -544,7 +554,7 @@ const BOARDS = [
     },
   },
   { // 15 — back to black and white, the stack alternating red and white
-    id: 15, start: 18.8, end: 20.8,
+    id: 15, start: 17.0, end: 20.8,
     // The red drops away on a burst of static rather than a cut.
     fx: (u) => {
       const b = burst(u, 0.0, 0.10);
@@ -598,7 +608,7 @@ const BOARDS = [
     },
     async draw(u, t) {
       wordmark(969, 719, 141.7);
-      copyBlock(t, { full: true });
+      copyBlock(t);
     },
   },
   { // 19 — the black beat
