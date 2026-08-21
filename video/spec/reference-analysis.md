@@ -154,3 +154,33 @@ The dot must never move. It is drawn to a **separate canvas that the distortion
 never touches** and composited after warp, drag and slice — verified locked at
 (959.6, 719.5) / (959.9, 719.7) / (959.3, 719.3) across frames, against a frame
 centre of (960.4, 720.4) measured from the .ai.
+
+
+## Corrections after the second review pass
+
+**Plate grade — shadow crush.** Putting the black point on the plate's own
+minimum crushed **55.4% of the eye's dark region to pure 0**, which read as a
+flat, hard-edged cut-out ("weird threshold effect"). The plate has nothing below
+16, so the black point is now left at 0 and only the highlights are compressed:
+range 22–250, **0.00% crushed, 0.00% blown**, and the dark region keeps sd 14.6
+against the raw plate's 11.3.
+
+**Grain — too contrasty.** Per-pixel white noise measured neighbour correlation
+**-0.377** against the TENDU reference's **-0.174**: far harsher than the
+reference. Grain is now value noise on a **1.10px cell**, smoothly interpolated,
+amplitude 0.26 → **sd 10.6/255, correlation -0.194**. Softer than the previous
+16.7 and clumped like real grain. The hard white speckle pass was removed
+entirely.
+
+**Comb — wrong axis emphasis and far too weak.** Measured on TENDU: the striping
+is **vertical** (column variation 63 vs row variation 8.6), period **3.79px on a
+1422px frame** (5.12px at this master) at **8.4% of local level**. It was running
+at 3px and 2.5%.
+
+**Slice displacement removed.** The 12–40px band displacement was what produced
+the wide horizontal bars the user rejected. Deleted; the vertical comb, 2D drag
+and type corruption carry the glitch instead.
+
+**Letterforms are never warped.** Boards carrying big type set `noWarp`, which
+zeroes the serpentine warp after events are applied. Type is corrupted only by
+duplication, offset, skew, ghosting and sliced bands.

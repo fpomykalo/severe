@@ -307,7 +307,7 @@ const BOARDS = [
     fx: (u) => {
       const enter = Math.max(0, 1 - u / 0.24);
       return { warp: 0.004 + 0.075 * enter, dragX: 110 * enter, dragY: 40 * enter,
-               slice: 0.9 * enter, noise: 0.10 + 0.5 * enter, comb: 0.05 + 0.10 * enter,
+               comb: 0.084 + 0.20 * enter,
                boost: 1.15 };
     },
     async draw(u, t, tb) {
@@ -320,7 +320,8 @@ const BOARDS = [
     id: 3, start: 5.0, end: 5.4,
     // The lockup is only up for well under half a second, so the tear punches
     // it in and out and leaves the middle clean enough to actually read.
-    fx: (u) => ({ slice: u < 0.3 ? 1.0 : 0, dragY: u < 0.3 ? 60 : 0, boost: 1.3 }),
+    fx: (u) => ({ dragY: u < 0.3 ? 60 : 0, comb: u < 0.3 ? 0.24 : 0.084,
+                  boost: 1.3, noWarp: true }),
     async draw(u, t, tb) {
       const img = await loadPlate('eye', Math.round((2.0 + tb) * FPS) + 1);
       drawPlate(img, 1.02, 0, 0, 0.86);
@@ -343,7 +344,7 @@ const BOARDS = [
     // The S holds for 1.6s, so the tear escalates through it rather than only
     // punching the ends.
     // The S is the biggest shape in the intro, so events hit hardest here.
-    fx: () => ({ boost: 1.6, blurBase: 2 }),
+    fx: () => ({ boost: 1.6, blurBase: 2, noWarp: true }),
     // Geometry measured off board 5 of the .ai: the visible red spans
     // 1849x1256px and is clipped at the bottom, which is a 2720px S with its
     // cap top at y=182, centred at x=951.
@@ -637,14 +638,30 @@ precision highp float;
 uniform sampler2D uSrc, uSrcB;
 uniform vec2  uRes;
 uniform float uFrame, uStep;
-uniform float uWarp, uDragX, uDragY, uSlice, uComb;
+uniform float uWarp, uDragX, uDragY, uComb;
 uniform float uBlurBase, uBlurAmp, uFocusDir;
-uniform float uLines, uGrain, uNoise;
+uniform float uLines, uGrain;
 out vec4 fragColor;
 
 float hash11(float p){ p=fract(p*0.1031); p*=p+33.33; p*=p+p; return fract(p); }
 float hash21(vec2 p){ vec3 q=fract(vec3(p.xyx)*0.1031); q+=dot(q,q.yzx+33.33); return fract((q.x+q.y)*q.z); }
 vec3  tex(vec2 uv){ return texture(uSrc, clamp(uv, 0.0, 1.0)).rgb; }
+
+// Film grain clumps; it is not per-pixel white noise. Measured neighbour
+// correlation is -0.174 in the TENDU reference against -0.377 for the naive
+// version, so the noise is generated on a ~1.9px cell and smoothly
+// interpolated, which softens it and drops the contrast.
+float grainNoise(vec2 p, float t){
+  vec2 g = p / 1.10;
+  vec2 i = floor(g), f = fract(g);
+  f = f * f * (3.0 - 2.0 * f);
+  vec2 o = vec2(t * 37.7, t * 17.3);
+  float a = hash21(i + o);
+  float b = hash21(i + vec2(1.0, 0.0) + o);
+  float c = hash21(i + vec2(0.0, 1.0) + o);
+  float d = hash21(i + vec2(1.0, 1.0) + o);
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y) - 0.5;
+}
 float luma(vec3 c){ return dot(c, vec3(0.2126,0.7152,0.0722)); }
 
 // Serpentine tape warp — traced off TENDU frame 0009: a stripe wanders +/-10%
@@ -693,13 +710,6 @@ void main(){
 
   uv.x += warp(y, tSec * 2.4) * uWarp;
 
-  // Narrow slices only — a handful of 12-40px bands, never the whole frame.
-  if(uSlice > 0.0){
-    float band = floor(y / mix(12.0, 40.0, hash11(uStep * 3.7)));
-    if(hash11(band * 7.13 + uStep * 11.7) > 1.0 - 0.14 * uSlice)
-      uv.x += (hash11(band * 3.1 + uStep * 5.3) - 0.5) * 0.22 * uSlice;
-  }
-
   float blurPx = uBlurBase + uBlurAmp * focusField(uv);
   float dirSign = hash11(floor(y / 110.0) * 2.7 + uStep * 1.3) < 0.5 ? -1.0 : 1.0;
   vec3 c = softSample(uv, vec2(uDragX * dirSign, uDragY), blurPx);
@@ -708,25 +718,18 @@ void main(){
   vec4 b = texture(uSrcB, clamp(uvStable, 0.0, 1.0));
   c = mix(c, b.rgb, b.a);
 
-  // Fine vertical comb, ~6% modulation as measured.
+  // Fine vertical comb. Measured on TENDU: period 3.79px on a 1422px frame
+  // (5.12px here) at 8.4% of local level, and it is unambiguously vertical --
+  // column variation 63 against row variation 8.6.
   if(uComb > 0.0)
-    c *= 1.0 - uComb * 0.5 * (0.5 + 0.5 * sin(gl_FragCoord.x * 2.0944));
+    c *= 1.0 - uComb * (0.5 + 0.5 * sin(gl_FragCoord.x * 1.2272));
 
   // Fine horizontal line dither: 1px lines on a 3px pitch. No thick bars.
   if(uLines > 0.0)
     c *= 1.0 - uLines * step(1.5, mod(gl_FragCoord.y, 3.0));
 
-  // Sparse fine snow, never banded.
-  if(uNoise > 0.0){
-    float sn = hash21(gl_FragCoord.xy * 0.5 + vec2(uFrame * 19.7, uFrame * 7.3));
-    c += vec3(step(1.0 - uNoise * 0.06, sn)) * 0.5;
-  }
-
-  if(uGrain > 0.0){
-    float n1 = hash21(gl_FragCoord.xy + vec2(uFrame*37.7, uFrame*17.3)) - 0.5;
-    float n2 = hash21(gl_FragCoord.yx*1.7 + vec2(uFrame*11.1, uFrame*29.3)) - 0.5;
-    c += (n1 + n2) * uGrain * (1.0 - 0.6 * luma(c));
-  }
+  if(uGrain > 0.0)
+    c += grainNoise(gl_FragCoord.xy, uFrame) * uGrain * (1.0 - 0.45 * luma(c));
 
   fragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
 }`;
@@ -746,8 +749,8 @@ if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgram
 gl.useProgram(prog);
 
 const U = Object.fromEntries(
-  ['uSrc','uSrcB','uRes','uFrame','uStep','uWarp','uDragX','uDragY','uSlice','uComb',
-   'uBlurBase','uBlurAmp','uFocusDir','uLines','uGrain','uNoise']
+  ['uSrc','uSrcB','uRes','uFrame','uStep','uWarp','uDragX','uDragY','uComb',
+   'uBlurBase','uBlurAmp','uFocusDir','uLines','uGrain']
     .map((n) => [n, gl.getUniformLocation(prog, n)]));
 
 function makeTexture(unit) {
@@ -777,21 +780,24 @@ async function renderFrame(n) {
   // Continuous floor: grain, lines and a trace of warp. Everything else only
   // exists inside a glitch event.
   const p = {
-    warp: 0.004, dragX: 0, dragY: 0, slice: 0, comb: 0.05,
+    warp: 0.004, dragX: 0, dragY: 0, comb: 0.084,
     blurBase: 0, blurAmp: 0, focusDir: hash11(Math.floor(t / 2.7) * 5.3) * 6.283,
-    lines: 0.05, grain: 0.16, noise: 0.10,
+    lines: 0.035, grain: 0.26,
     ...base,
   };
 
   if (g) {
     const a = g.amp * FX * (base.boost ?? 1);
-    if (g.kind === 0) { p.dragY = 90 * a; p.comb += 0.10 * a; }             // vertical streak
+    if (g.kind === 0) { p.dragY = 95 * a; p.comb += 0.16 * a; }            // vertical streak
     else if (g.kind === 1) { p.dragX = 120 * a; p.warp += 0.055 * a; }      // horizontal drag
-    else if (g.kind === 2) { p.slice = a; p.warp += 0.030 * a; }            // narrow slices
-    else { p.warp += 0.075 * a; p.comb += 0.08 * a; }                       // hard warp
-    p.grain += 0.05 * a;
-    p.noise += 0.30 * a;
+    else if (g.kind === 2) { p.comb += 0.26 * a; p.dragY = 45 * a; }        // hard vertical combing
+    else { p.warp += 0.075 * a; p.comb += 0.10 * a; }                       // tape warp
+    p.grain += 0.025 * a;
   }
+
+  // Letterforms are never warped: the type corruption and the screen glitches
+  // already carry those boards, and bending the shapes on top reads as too much.
+  if (base.noWarp) p.warp = 0;
 
   // A slow, always-present focal gradient, deepening during events.
   p.blurAmp = (p.blurAmp || 0) + 6 + (g ? 26 * g.amp * FX : 0);
@@ -813,9 +819,9 @@ async function renderFrame(n) {
   gl.uniform1f(U.uFrame, n);
   gl.uniform1f(U.uStep, Math.floor(t * STEP_FPS));
   for (const [k, loc] of [['warp',U.uWarp],['dragX',U.uDragX],['dragY',U.uDragY],
-                          ['slice',U.uSlice],['comb',U.uComb],['blurBase',U.uBlurBase],
+                          ['comb',U.uComb],['blurBase',U.uBlurBase],
                           ['blurAmp',U.uBlurAmp],['focusDir',U.uFocusDir],
-                          ['lines',U.uLines],['grain',U.uGrain],['noise',U.uNoise]]) {
+                          ['lines',U.uLines],['grain',U.uGrain]]) {
     gl.uniform1f(loc, p[k] || 0);
   }
   gl.drawArrays(gl.TRIANGLES, 0, 3);
