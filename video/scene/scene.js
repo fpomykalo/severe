@@ -676,17 +676,25 @@ vec3  tex(vec2 uv){ return texture(uSrc, clamp(uv, 0.0, 1.0)).rgb; }
 // correlation is -0.174 in the TENDU reference against -0.377 for the naive
 // version, so the noise is generated on a ~1.9px cell and smoothly
 // interpolated, which softens it and drops the contrast.
-// Fixed pattern, not reseeded per frame: an animated field reads as moving
-// noise rather than as grain sitting on the screen. It is applied last in the
-// chain, after warp, drag and comb, so it never rides the distortion.
-float grainNoise(vec2 p){
+// Grain scintillates in place: the lattice is fixed and only the value in each
+// cell is reseeded per frame. An earlier version offset the lattice itself by
+// (t*37.7, t*17.3), which slid the whole pattern across the screen — that is
+// what read as the grain shifting position rather than appearing and
+// disappearing. Applied last in the chain, after warp, drag and comb.
+float grainCell(vec2 i, float t){
+  vec3 q = fract(vec3(i.x, i.y, t) * vec3(0.1031, 0.1030, 0.0973));
+  q += dot(q, q.yxz + 33.33);
+  return fract((q.x + q.y) * q.z);
+}
+
+float grainNoise(vec2 p, float t){
   vec2 g = p / 1.10;
   vec2 i = floor(g), f = fract(g);
   f = f * f * (3.0 - 2.0 * f);
-  float a = hash21(i);
-  float b = hash21(i + vec2(1.0, 0.0));
-  float c = hash21(i + vec2(0.0, 1.0));
-  float d = hash21(i + vec2(1.0, 1.0));
+  float a = grainCell(i, t);
+  float b = grainCell(i + vec2(1.0, 0.0), t);
+  float c = grainCell(i + vec2(0.0, 1.0), t);
+  float d = grainCell(i + vec2(1.0, 1.0), t);
   return mix(mix(a, b, f.x), mix(c, d, f.x), f.y) - 0.5;
 }
 float luma(vec3 c){ return dot(c, vec3(0.2126,0.7152,0.0722)); }
@@ -762,7 +770,7 @@ void main(){
   // speckle on the dark areas.
   if(uGrain > 0.0){
     float l = luma(c);
-    c += grainNoise(gl_FragCoord.xy) * uGrain * (0.55 + 1.80 * l * (1.0 - l));
+    c += grainNoise(gl_FragCoord.xy, uFrame) * uGrain * (0.55 + 1.80 * l * (1.0 - l));
   }
 
   fragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
