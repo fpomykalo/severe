@@ -184,3 +184,32 @@ and type corruption carry the glitch instead.
 **Letterforms are never warped.** Boards carrying big type set `noWarp`, which
 zeroes the serpentine warp after events are applied. Type is corrupted only by
 duplication, offset, skew, ghosting and sliced bands.
+
+
+## Third review pass
+
+- **The serpentine warp is gone from the whole film.** It read as a subtle
+  left-right wander on small copy, which is not what the references do to text.
+  The uniform, the function and every board's use of it were removed rather than
+  turned down. Glitch events now carry drag and comb only.
+- **Grain is off by default** (`GRAIN_SCALE = 0`). Nothing was deleted: render
+  with `?grain=1` to restore the tuned settings (1.10px cell, amplitude 0.234,
+  scintillating in place, mid-tone weighted).
+- **Small-copy boards set `sharp`**, which zeroes the focal gradient. Copy that
+  has to be read should not sit under a defocus.
+- **Boards 9 and 10 are one continuous climb**, not two frames: the huge vertical
+  lockup travels from S/E/V to E/R across 11.6–13.3s while the type field writes
+  itself on, one character at a time.
+- **Copy is written out, not switched on**, on boards 9/10, 17 and 18.
+- **The radial** appears one label at a time over the first half of board 8, then
+  the whole arrangement turns exactly 45° so each label lands on its neighbour's
+  mark.
+- **Colour follows the plate**: copy goes white when the trees turn red
+  (boards 13–14) and back to red on the black-and-white plate (board 15).
+- **Scripted static bursts** replace three cuts: red trees → black-and-white
+  (board 15 in), lockup → big S (board 18 out), and the end card's exit.
+- **Board 20 splits its layers.** The S is corrupted and defocused; the ™ and the
+  transport marks are drawn to the stable layer and stay clean — measured edge
+  contrast 24 and 21 against the letter's 6.
+- **The end card holds two seconds longer** (28.6–32.0s) and leaves on a glitch.
+  Total running time is now **33s**.

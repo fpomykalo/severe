@@ -172,24 +172,44 @@ const cityStack = (xPt, yPt) => {
     label(c, xPt, yPt + i * 6.98));
 };
 
+// Writes a line out one character at a time. Progress is clamped, so passing a
+// value past 1 simply leaves the finished line on screen.
+function typeOut(text, xPt, yPt, progress, opts = {}) {
+  const n = Math.round(Math.max(0, Math.min(1, progress)) * text.length);
+  if (n > 0) label(text.slice(0, n), xPt, yPt, opts);
+}
+
+// A scripted burst for the transitions the storyboard calls for, as opposed to
+// the random glitch schedule. Peaks at `at` and falls off over `width`.
+const burst = (u, at, width) => Math.max(0, 1 - Math.abs(u - at) / width);
+
 // The three blocks of copy, placed exactly where the .ai puts them. Boards
 // 10-13 share this field; `full` adds the pair the denser boards carry.
-function typeField(full) {
-  label(COPY.line,   258.83, 208.96);
-  label(COPY.cities, 270.27,  78.47);
-  label(COPY.deploy, 244.20,  85.45);
-  label(COPY.cities, 239.49, 244.14);
-  label(COPY.deploy, 273.25, 251.28);
-  label(COPY.cities,   7.78, 180.08, { dir: -Math.PI / 2 });
-  label(COPY.deploy,  14.76, 237.44, { dir: -Math.PI / 2 });
-  label(COPY.line,     8.86,  27.05, { dir: -Math.PI / 2 });
-  if (full) label(COPY.line, 244.19, 41.43);
-  dot(264.5 * PT, 80.6 * PT);
-  dot(234.0 * PT, 246.3 * PT);
+// `write` staggers the eight blocks so the field types itself on rather than
+// snapping in; pass 1 (the default) for the finished state.
+function typeField(full, { color = RED, write = 1 } = {}) {
+  const lines = [
+    [COPY.line,   258.83, 208.96, 0],
+    [COPY.cities, 270.27,  78.47, 0],
+    [COPY.deploy, 244.20,  85.45, 0],
+    [COPY.cities, 239.49, 244.14, 0],
+    [COPY.deploy, 273.25, 251.28, 0],
+    [COPY.cities,   7.78, 180.08, -Math.PI / 2],
+    [COPY.deploy,  14.76, 237.44, -Math.PI / 2],
+    [COPY.line,     8.86,  27.05, -Math.PI / 2],
+  ];
+  if (full) lines.push([COPY.line, 244.19, 41.43, 0]);
+  lines.forEach(([txt, x, y, dir], i) => {
+    const start = (i / lines.length) * 0.55;
+    typeOut(txt, x, y, (write - start) / 0.45, { dir, color });
+  });
+  if (write > 0.55) dot(264.5 * PT, 80.6 * PT, color);
+  if (write > 0.70) dot(234.0 * PT, 246.3 * PT, color);
 }
 
 // Record / pause / fast-forward, as they sit under the S on board 20.
-function transportMarks(x, y, h) {
+function transportMarks(x, y, h, target = ctx) {
+  const ctx = target;
   ctx.save();
   ctx.fillStyle = RED;
   ctx.beginPath(); ctx.arc(x + h * 0.4, y + h * 0.5, h * 0.4, 0, Math.PI * 2); ctx.fill();
@@ -258,6 +278,24 @@ function glyphAtCap(ch, fontPx, cx, capTopPx, color = RED, rot = 0) {
 const TREE_RATE = 0.55;
 const treeFrame = (tb, offset) => Math.round((offset + tb * TREE_RATE) * FPS) + 1;
 
+// Boards 9 and 10 are one continuous move, not two frames: the huge vertical
+// lockup starts on S/E/V and climbs until E/R fills the frame. Sharing the
+// travel between them keeps it from reading as a replacement cut.
+const SEV_IN = 11.6, SEV_OUT = 13.3;
+
+function lockupClimb(t) {
+  const v = Math.max(0, Math.min(1, (t - SEV_IN) / (SEV_OUT - SEV_IN)));
+  const y = -300 - 2400 * v;
+  const x = 711 + 159 * v;
+  glitchType(glitchAt(t), t, ({ dx = 0, dy = 0, skew = 0, alpha = 1 }) => {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.transform(1, 0, skew, 1, dx, dy);
+    hugeVertical(x, y, 845);
+    ctx.restore();
+  }, 0.7);
+}
+
 // ---------------------------------------------------------------- timeline
 //
 // Boards are the storyboard frames, read row-major. Times in seconds at 24fps.
@@ -304,7 +342,7 @@ const BOARDS = [
     // Scripted, not one of the random events.
     fx: (u) => {
       const enter = Math.max(0, 1 - u / 0.24);
-      return { warp: 0.004 + 0.075 * enter, dragX: 110 * enter, dragY: 40 * enter,
+      return { dragX: 110 * enter, dragY: 40 * enter,
                comb: 0.084 + 0.20 * enter,
                boost: 1.15 };
     },
@@ -318,8 +356,7 @@ const BOARDS = [
     id: 3, start: 5.0, end: 5.4,
     // The lockup is only up for well under half a second, so the tear punches
     // it in and out and leaves the middle clean enough to actually read.
-    fx: (u) => ({ dragY: u < 0.3 ? 60 : 0, comb: u < 0.3 ? 0.24 : 0.084,
-                  boost: 0, noWarp: true }),
+    fx: (u) => ({ dragY: u < 0.3 ? 60 : 0, comb: u < 0.3 ? 0.24 : 0.084, boost: 0 }),
     async draw(u, t, tb) {
       const img = await loadPlate('eye', Math.round((2.0 + tb) * FPS) + 1);
       drawPlate(img, 1.02, 0, 0, 0.86);
@@ -356,7 +393,7 @@ const BOARDS = [
     // One-sided defocus: the focal gradient deepens hard, holds, and snaps
     // back, so only part of the letter goes soft — as in the blur references.
     fx: (u) => ({
-      boost: 1.6, noWarp: true, blurBase: 2,
+      boost: 1.6, blurBase: 2,
       blurAmp: 78 * Math.max(0, Math.sin((u - 0.18) / 0.42 * Math.PI)),
     }),
     // Geometry measured off board 5 of the .ai: the visible red spans
@@ -374,61 +411,52 @@ const BOARDS = [
   },
   { // 6 — back to black, the marker alone
     id: 6, start: 8.2, end: 8.9,
-    fx: () => ({ boost: 0.8 }),
+    fx: () => ({ boost: 0.8, sharp: true }),
     async draw() { label('S.', 177.40, 139.34); },
   },
   { // 7 — the cities arrive next to it
     id: 7, start: 8.9, end: 10.1,
-    fx: () => ({ boost: 0.9 }),
+    fx: () => ({ boost: 0.9, sharp: true }),
     async draw() { label('S.', 177.40, 139.34); cityStack(197.27, 139.34); },
   },
   { // 8 — the radial composition: Deployed / Globally on 45deg steps
     id: 8, start: 10.1, end: 11.6,
-    fx: () => ({ boost: 1.0 }),
-    async draw(u, t) {
+    fx: () => ({ boost: 1.0, sharp: true }),
+    async draw(u) {
       label('S.', 177.40, 139.34); cityStack(197.27, 139.34);
-      const step = Math.floor(t * STEP_FPS);
+      // The eight labels appear one at a time over the first half, then the
+      // whole arrangement turns a single 45deg step, so each label ends on its
+      // neighbour's mark: Globally lands where the top Deployed was.
+      const rot = u * Math.PI / 4;
       for (let i = 0; i < 8; i++) {
-        if (hash11(i * 5.7 + step * 1.9) < 0.12) continue;   // some flick out
-        const a = i * Math.PI / 4;
-        const r = 58 + 6 * Math.sin(step * 0.7 + i);
+        const appear = (i / 8) * 0.5;
+        if (u < appear) continue;
+        const a = i * Math.PI / 4 + rot;
         label(i % 2 ? 'Globally' : 'Deployed',
-              200 + Math.cos(a) * r, 150 + Math.sin(a) * r, { dir: a });
+              200 + Math.cos(a) * 58, 150 + Math.sin(a) * 58, { dir: a });
       }
     },
   },
   { // 9 — SEV: the vertical lockup blown up and rotated 180deg, cropped
     id: 9, start: 11.6, end: 12.4,
-    fx: (u) => ({ boost: 1.5, noWarp: true,
-                  blurAmp: 52 * Math.max(0, Math.sin(u / 0.6 * Math.PI)) }),
+    fx: () => ({ boost: 1.2 }),
     async draw(u, t) {
-      glitchType(glitchAt(t), t, ({ dx = 0, dy = 0, skew = 0, alpha = 1 }) => {
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        ctx.transform(1, 0, skew, 1, dx, dy);
-        hugeVertical(711, -300, 845);                // S / E / V
-        ctx.restore();
-      }, 0.7);
+      lockupClimb(t);
+      typeField(true, { write: (t - SEV_IN) / 1.5 });
     },
   },
   { // 10 — ER, with the copy stacked around it
     id: 10, start: 12.4, end: 13.3,
-    fx: () => ({ boost: 1.5, noWarp: true }),
+    fx: () => ({ boost: 1.2 }),
     async draw(u, t) {
-      glitchType(glitchAt(t), t, ({ dx = 0, dy = 0, skew = 0, alpha = 1 }) => {
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        ctx.transform(1, 0, skew, 1, dx, dy);
-        hugeVertical(870, -2700, 845);               // ...scrolled on to E / R
-        ctx.restore();
-      }, 0.7);
-      typeField(true);
+      lockupClimb(t);
+      typeField(true, { write: (t - SEV_IN) / 1.5 });
     },
   },
   { // 11 — the type field alone
     id: 11, start: 13.3, end: 14.4,
     fx: () => ({ boost: 1.0 }),
-    async draw() { typeField(false); },
+    async draw() { typeField(true); },
   },
   { // 12 — the trees, black and white
     id: 12, start: 14.4, end: 16.2,
@@ -437,11 +465,11 @@ const BOARDS = [
     fx: (u) => {
       const enter = Math.max(0, 1 - u / 0.16);
       return { dragX: 95 * enter, dragY: 35 * enter, comb: 0.084 + 0.18 * enter,
-               warp: 0.004 + 0.05 * enter, boost: 1.1 };
+               boost: 1.1 };
     },
     async draw(u, t, tb) {
       drawPlate(await loadPlate('trees', treeFrame(tb, 0.4)), 1.03, 0, 0, 0.9);
-      typeField(false);
+      typeField(true);
     },
   },
   { // 13 — the same trees, red
@@ -450,33 +478,40 @@ const BOARDS = [
     async draw(u, t, tb) {
       drawPlate(await loadPlate('trees', treeFrame(tb, 1.39)), 1.03, 0, 0, 0.9);
       tintRed();
-      typeField(false);
+      typeField(true, { color: '#fff' });          // white over the red plate
     },
   },
   { // 14 — five white lockups down the 9:16 column
     id: 14, start: 17.8, end: 19.4,
-    fx: () => ({ boost: 1.2, noWarp: true }),
+    fx: () => ({ boost: 1.2 }),
     async draw(u, t, tb) {
       drawPlate(await loadPlate('trees', treeFrame(tb, 2.27)), 1.03, 0, 0, 0.9);
       tintRed();
-      const step = Math.floor(t * STEP_FPS);
-      for (let i = 0; i < 5; i++) {
-        if (hash11(i * 9.1 + step * 2.3) < 0.10) continue;
-        wordmark(SAFE_V.x + SAFE_V.w / 2, 46 + i * 311, 110, '#fff');
-      }
-      dot(SAFE_V.x + 8, 118, '#fff');
+      typeField(true, { color: '#fff' });          // the copy carries over
+      // The middle lockup lands first; the pairs above and below duplicate out
+      // of it rather than the whole stack arriving at once.
+      const cx = SAFE_V.x + SAFE_V.w / 2;
+      wordmark(cx, 46 + 2 * 311, 110, '#fff');
+      if (u > 0.22) { wordmark(cx, 46 + 311, 110, '#fff');
+                      wordmark(cx, 46 + 3 * 311, 110, '#fff'); }
+      if (u > 0.42) { wordmark(cx, 46, 110, '#fff');
+                      wordmark(cx, 46 + 4 * 311, 110, '#fff'); }
       transportMarks(SAFE_V.x + SAFE_V.w - 96, 108, 22);
     },
   },
   { // 15 — back to black and white, the stack alternating red and white
     id: 15, start: 19.4, end: 20.8,
-    fx: () => ({ boost: 1.2, noWarp: true }),
+    // The red drops away on a burst of static rather than a cut.
+    fx: (u) => {
+      const b = burst(u, 0.0, 0.10);
+      return { boost: 1.2, comb: 0.084 + 0.55 * b, dragY: 70 * b, dragX: 40 * b };
+    },
     async draw(u, t, tb) {
       drawPlate(await loadPlate('trees', treeFrame(tb, 3.15)), 1.03, 0, 0, 0.9);
-      const step = Math.floor(t * STEP_FPS);
-      for (let i = 0; i < 5; i++) {
-        if (hash11(i * 4.3 + step * 3.1) < 0.10) continue;
-        wordmark(SAFE_V.x + SAFE_V.w / 2, 46 + i * 311, 110, i % 2 ? RED : '#fff');
+      const cx = SAFE_V.x + SAFE_V.w / 2;
+      // The middle lockup is gone from here on: it sat behind the copy block.
+      for (const i of [0, 1, 3, 4]) {
+        wordmark(cx, 46 + i * 311, 110, i % 2 ? RED : '#fff');
       }
       label(COPY.cities, 161.33, 135.97);
       label(COPY.deploy, 174.04, 142.95);
@@ -486,7 +521,7 @@ const BOARDS = [
   { // 16 — the reveal. Cosmos treatment: the lockup multiplies, offsets and
     //      shreds on the 12fps step, over black.
     id: 16, start: 20.8, end: 22.8,
-    fx: () => ({ boost: 1.5, noWarp: true }),
+    fx: () => ({ boost: 1.5 }),
     async draw(u, t) {
       // The lockup arrives shredded and resolves: a scripted envelope over the
       // first half, then whatever random events land after it.
@@ -503,28 +538,33 @@ const BOARDS = [
   },
   { // 17 — the copy starts building around it
     id: 17, start: 22.8, end: 24.0,
-    fx: () => ({ boost: 0.8, noWarp: true }),
-    async draw() {
+    fx: () => ({ boost: 0.8, sharp: true }),
+    async draw(u) {
       wordmark(969, 719, 141.7);
-      label(COPY.line,   179.46, 209.65);
-      label(COPY.cities, 148.49,  79.16);
-      label(COPY.deploy, 122.41,  86.14);
-      dot(143.0 * PT, 81.3 * PT);
+      typeOut(COPY.line,   179.46, 209.65, u / 0.45);
+      typeOut(COPY.cities, 148.49,  79.16, (u - 0.20) / 0.45);
+      typeOut(COPY.deploy, 122.41,  86.14, (u - 0.34) / 0.45);
+      if (u > 0.30) dot(143.0 * PT, 81.3 * PT);
     },
   },
   { // 18 — and completes
     id: 18, start: 24.0, end: 25.4,
-    fx: () => ({ boost: 0.8, noWarp: true }),
-    async draw() {
+    // Exits on a static burst: this is the cut from the lockup to the big S.
+    fx: (u) => {
+      const b = burst(u, 1.0, 0.12);
+      return { boost: 0.8, sharp: b < 0.05, comb: 0.084 + 0.6 * b,
+               dragY: 85 * b, dragX: 50 * b };
+    },
+    async draw(u) {
       wordmark(969, 719, 141.7);
       label(COPY.line,   179.46, 209.65);
       label(COPY.cities, 148.49,  79.16);
       label(COPY.deploy, 122.41,  86.14);
-      label(COPY.cities, 187.43, 244.84);
-      label(COPY.deploy, 221.20, 251.97);
-      label(COPY.line,   122.41,  42.13);
+      typeOut(COPY.cities, 187.43, 244.84, u / 0.4);
+      typeOut(COPY.deploy, 221.20, 251.97, (u - 0.18) / 0.4);
+      typeOut(COPY.line,   122.41,  42.13, (u - 0.34) / 0.4);
       dot(143.0 * PT, 81.3 * PT);
-      dot(182.0 * PT, 247.0 * PT);
+      if (u > 0.3) dot(182.0 * PT, 247.0 * PT);
     },
   },
   { // 19 — the black beat
@@ -536,7 +576,7 @@ const BOARDS = [
     id: 20, start: 26.0, end: 28.6,
     // Same one-sided defocus as the cropped S, and the same size drift.
     fx: (u) => ({
-      boost: 1.6, noWarp: true,
+      boost: 1.6,
       blurAmp: 74 * Math.max(0, Math.sin((u - 0.14) / 0.46 * Math.PI)),
     }),
     async draw(u, t) {
@@ -549,21 +589,36 @@ const BOARDS = [
         ctx.scale(k, k);
         ctx.translate(-959, -719);
         glyphAtCap('S', 1501, 959, 719 - 1073 / 2);
-        setType(1501 * 0.115, 700);
-        ctx.fillStyle = RED; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        ctx.fillText('™', 1310, 268);
-        transportMarks(576, 1224, 26);
         ctx.restore();
       });
     },
+    // The trademark and the transport marks live on the stable layer, so the
+    // defocus and the corruption hit the letter alone and leave them clean.
+    drawStable() {
+      ctxB.save();
+      ctxB.font = `700 ${1501 * 0.115}px HaasDisp, sans-serif`;
+      ctxB.fillStyle = RED;
+      ctxB.textAlign = 'left';
+      ctxB.textBaseline = 'alphabetic';
+      ctxB.fillText('™', 1310, 268);
+      ctxB.restore();
+      transportMarks(576, 1224, 26, ctxB);
+    },
   },
   { // 21 — the lockup, small
-    id: 21, start: 28.6, end: 30.0,
-    fx: () => ({ boost: 0.6, noWarp: true }),
-    async draw() { wordmark(964, 719, 38); },
+    id: 21, start: 28.6, end: 32.0,
+    // Holds, then leaves on a burst of static rather than a cut.
+    fx: (u) => {
+      const b = burst(u, 1.0, 0.09);
+      return { boost: 0.6, sharp: b < 0.05, comb: 0.084 + 0.7 * b,
+               dragY: 95 * b, dragX: 60 * b };
+    },
+    async draw(u) {
+      if (u < 0.965) wordmark(964, 719, 38);
+    },
   },
   { // 22 — out
-    id: 22, start: 30.0, end: 31.0,
+    id: 22, start: 32.0, end: 33.0,
     fx: (u) => ({ boost: 0, grain: 0.234 * (1 - u), comb: 0.084 * (1 - u) }),
     async draw() {},
   },
@@ -658,7 +713,7 @@ precision highp float;
 uniform sampler2D uSrc, uSrcB;
 uniform vec2  uRes;
 uniform float uFrame, uStep;
-uniform float uWarp, uDragX, uDragY, uComb;
+uniform float uDragX, uDragY, uComb;
 uniform float uBlurBase, uBlurAmp, uFocusDir;
 uniform float uLines, uGrain;
 out vec4 fragColor;
@@ -694,17 +749,6 @@ float grainNoise(vec2 p, float t){
 }
 float luma(vec3 c){ return dot(c, vec3(0.2126,0.7152,0.0722)); }
 
-// Serpentine tape warp — traced off TENDU frame 0009: a stripe wanders +/-10%
-// of frame width, and a single sine explains only 36% of it, so it is summed
-// octaves at roughly frame-height, /3, /6 and /12.
-float warp(float y, float t){
-  float w = sin(y * 6.2831 / 1440.0 + t * 0.70)
-     + 0.45 * sin(y * 6.2831 /  480.0 + t * 1.30 + 1.7)
-     + 0.22 * sin(y * 6.2831 /  240.0 + t * 2.10 + 3.1)
-     + 0.10 * sin(y * 6.2831 /  120.0 + t * 3.30 + 5.2);
-  return w / 1.77;
-}
-
 // A smooth focal gradient across the frame, in an arbitrary direction: one side
 // sharp, the other soft, as in the blur references where SEVE is defocused and
 // RE is not, or the S is sharp left and soft right.
@@ -737,8 +781,6 @@ void main(){
   vec2 uvStable = uv;
   float y = (1.0 - uv.y) * uRes.y;
   float tSec = uFrame / 24.0;
-
-  uv.x += warp(y, tSec * 2.4) * uWarp;
 
   float blurPx = uBlurBase + uBlurAmp * focusField(uv);
   // Smooth, not banded — a per-band random sign produced hard horizontal bars.
@@ -786,7 +828,7 @@ if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgram
 gl.useProgram(prog);
 
 const U = Object.fromEntries(
-  ['uSrc','uSrcB','uRes','uFrame','uStep','uWarp','uDragX','uDragY','uComb',
+  ['uSrc','uSrcB','uRes','uFrame','uStep','uDragX','uDragY','uComb',
    'uBlurBase','uBlurAmp','uFocusDir','uLines','uGrain']
     .map((n) => [n, gl.getUniformLocation(prog, n)]));
 
@@ -806,7 +848,10 @@ gl.viewport(0, 0, W, H);
 // ---------------------------------------------------------------- driver
 
 const FX = Number(new URLSearchParams(location.search).get('fx') || 1);
-const GRAIN_SCALE = Number(new URLSearchParams(location.search).get('grain') ?? 1);
+// Grain is off by default so the film can be graded and textured downstream.
+// Nothing about it has been deleted: render with ?grain=1 to bring it back at
+// the tuned settings (1.10px cell, amplitude 0.234, scintillating in place).
+const GRAIN_SCALE = Number(new URLSearchParams(location.search).get('grain') ?? 0);
 
 async function renderFrame(n) {
   const t = n / FPS;
@@ -818,7 +863,7 @@ async function renderFrame(n) {
   // Continuous floor: grain, lines and a trace of warp. Everything else only
   // exists inside a glitch event.
   const p = {
-    warp: 0.004, dragX: 0, dragY: 0, comb: 0.084,
+    dragX: 0, dragY: 0, comb: 0.084,
     blurBase: 0, blurAmp: 0, focusDir: hash11(Math.floor(t / 2.7) * 5.3) * 6.283,
     lines: 0.035, grain: 0.234,
     ...base,
@@ -827,20 +872,19 @@ async function renderFrame(n) {
   if (g) {
     const a = g.amp * FX * (base.boost ?? 1);
     if (g.kind === 0) { p.dragY = 95 * a; p.comb += 0.16 * a; }            // vertical streak
-    else if (g.kind === 1) { p.dragX = 120 * a; p.warp += 0.055 * a; }      // horizontal drag
+    else if (g.kind === 1) { p.dragX = 120 * a; p.comb += 0.06 * a; }      // horizontal drag
     else if (g.kind === 2) { p.comb += 0.26 * a; p.dragY = 45 * a; }        // hard vertical combing
-    else { p.warp += 0.075 * a; p.comb += 0.10 * a; }                       // tape warp
+    else { p.dragX = 70 * a; p.dragY = 55 * a; p.comb += 0.14 * a; }        // both axes
     p.grain += 0.025 * a;
   }
 
   p.grain = (p.grain || 0) * GRAIN_SCALE;
 
-  // Letterforms are never warped: the type corruption and the screen glitches
-  // already carry those boards, and bending the shapes on top reads as too much.
-  if (base.noWarp) p.warp = 0;
-
-  // A slow, always-present focal gradient, deepening during events.
+  // A slow, always-present focal gradient, deepening during events. Boards of
+  // small type opt out with `sharp` — copy that has to be read should not sit
+  // under a defocus.
   p.blurAmp = (p.blurAmp || 0) + 6 + (g ? 26 * g.amp * FX : 0);
+  if (base.sharp) { p.blurBase = 0; p.blurAmp = 0; }
 
   ctx.fillStyle = GROUND;
   ctx.fillRect(0, 0, W, H);
@@ -858,7 +902,7 @@ async function renderFrame(n) {
   gl.uniform2f(U.uRes, W, H);
   gl.uniform1f(U.uFrame, n);
   gl.uniform1f(U.uStep, Math.floor(t * STEP_FPS));
-  for (const [k, loc] of [['warp',U.uWarp],['dragX',U.uDragX],['dragY',U.uDragY],
+  for (const [k, loc] of [['dragX',U.uDragX],['dragY',U.uDragY],
                           ['comb',U.uComb],['blurBase',U.uBlurBase],
                           ['blurAmp',U.uBlurAmp],['focusDir',U.uFocusDir],
                           ['lines',U.uLines],['grain',U.uGrain]]) {
