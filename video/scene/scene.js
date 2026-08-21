@@ -316,12 +316,15 @@ function lockupClimb(t) {
   // 70% slower than the first attempt, and purely vertical — the horizontal
   // travel it used to carry read as the letters sliding sideways.
   const y = -300 - 720 * v;
-  const x = 711;
+  // Measured off board 9 of the .ai: the big letterform occupies x300.6..1128.7
+  // and the small copy resumes at x1129.9. Staying inside that keeps the huge
+  // type off the copy instead of running across it.
+  const x = 724.4;
   glitchType(glitchAt(t), t, ({ dx = 0, dy = 0, skew = 0, alpha = 1 }) => {
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.transform(1, 0, skew, 1, dx, dy);
-    hugeVertical(x, y, 845);
+    hugeVertical(x, y, 787);
     ctx.restore();
   }, 0.7);
 }
@@ -337,10 +340,11 @@ function copyBlock(t, { full = false } = {}) {
   writeLine(COPY.deploy, 122.41,  86.14, sec - 1.35, { seed: 19 });
   if (sec > 1.4) dot(143.0 * PT, 81.3 * PT);
   if (!full) return;
-  writeLine(COPY.cities, 187.43, 244.84, sec - 3.6, { seed: 27 });
-  writeLine(COPY.deploy, 221.20, 251.97, sec - 3.9, { seed: 35 });
-  writeLine(COPY.line,   122.41,  42.13, sec - 4.2, { seed: 43 });
-  if (sec > 4.3) dot(182.0 * PT, 247.0 * PT);
+  // Straight on from the first block finishing, with no dead gap.
+  writeLine(COPY.cities, 187.43, 244.84, sec - 2.45, { seed: 27 });
+  writeLine(COPY.deploy, 221.20, 251.97, sec - 2.75, { seed: 35 });
+  writeLine(COPY.line,   122.41,  42.13, sec - 3.05, { seed: 43 });
+  if (sec > 3.2) dot(182.0 * PT, 247.0 * PT);
 }
 
 // ---------------------------------------------------------------- timeline
@@ -457,18 +461,18 @@ const BOARDS = [
     },
   },
   { // 6 — back to black, the marker alone
-    id: 6, start: 7.2, end: 7.8,
+    id: 6, start: 7.2, end: 7.6,
     fx: () => ({ boost: 0.8, sharp: true }),
     async draw() { label('S.', 177.40, 139.34); },
   },
   { // 7 — the cities arrive next to it
-    id: 7, start: 7.8, end: 8.8,
+    id: 7, start: 7.6, end: 8.8,
     fx: () => ({ boost: 0.9, sharp: true }),
     // The cities scramble in one after another, beginning the moment the S. is
     // on screen rather than waiting for this board.
     async draw(u, t) {
       label('S.', 177.40, 139.34);
-      const sec = t - 7.35;
+      const sec = t - 7.62;   // London is seen writing, not already written
       ['London', 'New York', 'Detroit'].forEach((c, i) =>
         writeLine(c, 197.27, 139.34 + i * 6.98, sec - i * 0.16, { seed: i * 23 }));
     },
@@ -477,7 +481,6 @@ const BOARDS = [
     id: 8, start: 8.8, end: 11.8,
     fx: () => ({ boost: 1.0, sharp: true }),
     async draw(u) {
-      const b8start = 8.8, b8end = 11.8;
       label('S.', 177.40, 139.34); cityStack(197.27, 139.34);
       // The eight labels scramble in one at a time, then the whole arrangement
       // turns a single 45deg step so each lands on its neighbour's mark:
@@ -488,10 +491,8 @@ const BOARDS = [
         const appear = (i / 8) * 0.42;
         if (u < appear) continue;
         const a = i * Math.PI / 4 + rot;
-        const txt = i % 2 ? 'Globally' : 'Deployed';
-        const out = scrambled(txt, (u - appear) * (b8end - b8start) * 1000,
-                              { seed: i * 31 });
-        if (out) label(out, 200 + Math.cos(a) * 58, 150 + Math.sin(a) * 58, { dir: a });
+        label(i % 2 ? 'Globally' : 'Deployed',
+              200 + Math.cos(a) * 58, 150 + Math.sin(a) * 58, { dir: a });
       }
     },
   },
@@ -523,18 +524,21 @@ const BOARDS = [
   },
   { // 13 — the same trees, red
     id: 13, start: 15.8, end: 18.8,
-    fx: () => ({ boost: 1.0 }),
+    fx: (u) => {
+      const b = burst(u, 0.0, 0.055);
+      return { boost: 1.0, comb: 0.084 + 0.6 * b, dragY: 85 * b, dragX: 50 * b };
+    },
     async draw(u, t, tb) {
       drawPlate(await loadPlate('trees', treeFrame(tb, 1.39)), 1.03, 0, 0, 0.9);
       tintRed();
       typeField(true, { color: '#fff' });          // white over the red plate
-      // The lockups begin the moment the plate turns red. The middle lands
-      // first; the pairs follow 30% sooner than they used to.
+      // The glitch turns the plate red first; the middle lockup lands just
+      // after it, not on the same frame. The pairs follow from there.
       const cx = SAFE_V.x + SAFE_V.w / 2;
-      wordmark(cx, 46 + 2 * 311, 110, '#fff');
-      if (u > 0.107) { wordmark(cx, 46 + 311, 110, '#fff');
+      if (u > 0.055) wordmark(cx, 46 + 2 * 311, 110, '#fff');
+      if (u > 0.150) { wordmark(cx, 46 + 311, 110, '#fff');
                        wordmark(cx, 46 + 3 * 311, 110, '#fff'); }
-      if (u > 0.206) { wordmark(cx, 46, 110, '#fff');
+      if (u > 0.245) { wordmark(cx, 46, 110, '#fff');
                        wordmark(cx, 46 + 4 * 311, 110, '#fff'); }
       transportMarks(SAFE_V.x + SAFE_V.w - 110, 96, 92, 20, '#fff');
     },
@@ -550,9 +554,8 @@ const BOARDS = [
       drawPlate(await loadPlate('trees', treeFrame(tb, 3.15)), 1.03, 0, 0, 0.9);
       const cx = SAFE_V.x + SAFE_V.w / 2;
       // The middle lockup is gone from here on: it sat behind the copy block.
-      for (const i of [0, 1, 3, 4]) {
-        wordmark(cx, 46 + i * 311, 110, i % 2 ? RED : '#fff');
-      }
+      // All four lockups red, matching the copy, for the whole board.
+      for (const i of [0, 1, 3, 4]) wordmark(cx, 46 + i * 311, 110, RED);
       label(COPY.cities, 161.33, 135.97);
       label(COPY.deploy, 174.04, 142.95);
       label(COPY.line,   153.61, 156.91);
@@ -606,10 +609,11 @@ const BOARDS = [
   { // 20 — the big S with its trademark, and the transport marks
     id: 20, start: 26.2, end: 28.8,
     // Same one-sided defocus as the cropped S, and the same size drift.
-    fx: (u) => ({
-      boost: 1.6,
-      blurAmp: 74 * Math.max(0, Math.sin((u - 0.14) / 0.46 * Math.PI)),
-    }),
+    fx: (u) => {
+      const b = burst(u, 1.0, 0.10);          // the cut to the end card
+      return { boost: 1.6, comb: 0.084 + 0.65 * b, dragY: 95 * b, dragX: 55 * b,
+               blurAmp: 74 * Math.max(0, Math.sin((u - 0.14) / 0.46 * Math.PI)) };
+    },
     // The trademark and the marks are drawn straight, on the stable layer.
     // The letter holds its size and place. Measured off board 20 of the .ai:
     // the S occupies x 516.0..1402.9, y 182.6..1256.6 -- 886.9 x 1074.0px.
@@ -646,13 +650,24 @@ const BOARDS = [
   { // 21 — the lockup, small
     id: 21, start: 28.8, end: 32.2,
     // Holds, then leaves on a burst of static rather than a cut.
+    // The last glitch is the hardest in the film: the wordmark is torn apart
+    // rather than cut away.
     fx: (u) => {
-      const b = burst(u, 1.0, 0.09);
-      return { boost: 0.6, sharp: b < 0.05, comb: 0.084 + 0.7 * b,
-               dragY: 95 * b, dragX: 60 * b };
+      const b = burst(u, 1.0, 0.11);
+      return { boost: 0.6, sharp: b < 0.05, comb: 0.084 + 1.5 * b,
+               dragY: 190 * b, dragX: 130 * b, grain: 0.234 + 0.18 * b };
     },
-    async draw(u) {
-      if (u < 0.965) wordmark(964, 719, 38);
+    async draw(u, t) {
+      if (u >= 0.975) return;
+      const b = burst(u, 1.0, 0.11);
+      glitchType(b > 0.15 ? { amp: b } : null, t,
+        ({ dx = 0, dy = 0, skew = 0, alpha = 1 }) => {
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.transform(1, 0, skew, 1, dx, dy);
+          wordmark(964, 719, 38);
+          ctx.restore();
+        });
     },
   },
   { // 22 — out
